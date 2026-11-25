@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta name="robots" content="noindex, nofollow">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Carnet PISU 2024</title>
+<link rel="stylesheet" href="vendor/open-props.min.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+<header class="tete">
+  <a class="logo" href="#/" aria-label="Accueil du carnet"><img src="images/logo_sdis44.png" alt="SDIS 44, sapeurs-pompiers de Loire-Atlantique"></a>
+  <div class="tete-tx">
+    <h1>Carnet PISU 2024</h1>
+    <p class="sub">Protocoles infirmiers de soins d'urgence du SSSM 44</p>
+  </div>
+  <button class="b theme-btn" id="son" type="button" aria-pressed="false" title="Petits sons des gestes, coupés par défaut">♪ Son coupé</button>
+  <button class="b theme-btn" id="theme" type="button" title="Mode clair, sombre ou celui du système">◐ Auto</button>
+  <div class="recherche" id="recherche">
+    <label class="r-champ"><span aria-hidden="true">⌕</span><input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="Rechercher : protocole, médicament, geste, mot" aria-label="Rechercher dans le carnet"><kbd aria-hidden="true">/</kbd></label>
+    <ul id="res" class="r-res" aria-label="Résultats"></ul>
+  </div>
+</header>
+<nav class="tabs" id="nav" role="tablist" aria-label="Sections"></nav>
+<div id="app"></div>
+<footer class="signature">Par William Friconneau, Infirmier Principal SPV<br><span class="note">Carnet de travail personnel. Le PDF « PISU 2024 » du SSSM 44 fait foi ; les écarts et les points à confirmer sont signalés sur chaque page.</span></footer>
+</main>
+<script src="data/pages.js"></script>
+<script src="data/medicaments.js"></script>
+<script src="data/errata.js"></script>
+<script src="data/images.js"></script>
+<script src="data/preparations.js"></script>
+<script src="data/gestes.js"></script>
+<script src="data/doses.js"></script>
+<script src="data/boucles.js"></script>
+<script src="data/pharmaco.js"></script>
+<script src="data/cas.js"></script>
+<script src="icones.js"></script>
+<script src="scenes.js"></script>
+<script src="formation.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
