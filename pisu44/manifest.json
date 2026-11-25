@@ -1,0 +1,175 @@
+{
+ "version": "dd02ad94be111438",
+ "files": [
+  {
+   "path": "data/boucles.js",
+   "sha256": "1a31743da0a1f57f5f92c350d52b380ff765d8680df4521bf1cf9da9e62d2a81",
+   "size": 1766
+  },
+  {
+   "path": "data/errata.js",
+   "sha256": "2c9915c5e7d9247eed50a0b4bd341906a95913cee67fdeb2581f2530aa1350ed",
+   "size": 13427
+  },
+  {
+   "path": "data/images.js",
+   "sha256": "5375cc718ed2585f7307f1df79ee8edbd1ef9eb044f61865e9e2bf5d9157e7b8",
+   "size": 6989
+  },
+  {
+   "path": "data/medicaments.js",
+   "sha256": "699d9da075612cc34a9ecf32bb31bf25b6fc15c62ede27e8d3603e4e41a8a17a",
+   "size": 50390
+  },
+  {
+   "path": "data/pages.js",
+   "sha256": "7e5cb500e6a6853ee79eb948d05e9d400aaed2850999591f28880bf841baf45a",
+   "size": 330827
+  },
+  {
+   "path": "images/icones/actes-secouristes.png",
+   "sha256": "c05fdd0bd2be979b7cb35703b91ef19118c495b075b3fa344e4727b2b85e6aac",
+   "size": 12396
+  },
+  {
+   "path": "images/icones/bilan.png",
+   "sha256": "2a2460d675442f57df671fa0b625f0ecc154abc54a06a845e72733f8b6e942fb",
+   "size": 6310
+  },
+  {
+   "path": "images/icones/exclusion.png",
+   "sha256": "b20a04f15c2e786af6e1323029cc255277757db7c6367b9e12b5da2941e322b6",
+   "size": 14201
+  },
+  {
+   "path": "images/icones/inclusion.png",
+   "sha256": "3813e7440d20a1b01e8ffc22c3869167a6ff63656297ba781fe7d592b34e5229",
+   "size": 10628
+  },
+  {
+   "path": "images/icones/modalite.png",
+   "sha256": "c627749981a1f617589bf251359e8b8e3dd9ddefad996cfff7347c32f5596865",
+   "size": 8877
+  },
+  {
+   "path": "images/logo_sdis44.png",
+   "sha256": "405e014715d0ecdcee31c2a576073367a82741e3d66e176fb797c3a25d2963b5",
+   "size": 8551
+  },
+  {
+   "path": "images/med/M10.jpg",
+   "sha256": "b81f291c80f971097ef922d8027d32e9ab2586dd06b8c3a5baf73fd34c793128",
+   "size": 124259
+  },
+  {
+   "path": "images/med/M11.jpg",
+   "sha256": "9631ec7ae6330a5f94bee8bec5002ef510b25251decb55f8f23efe7464ca8965",
+   "size": 53420
+  },
+  {
+   "path": "images/med/M12.jpg",
+   "sha256": "3e23bcbf2d4f33e41d63bbddc26811153c107f2b2be145544f21f5fc90732bfe",
+   "size": 46192
+  },
+  {
+   "path": "images/med/M13.jpg",
+   "sha256": "6eb509650861f83272c2ff91fd490fed172be5fc75b758de1f859a0b3621736f",
+   "size": 182458
+  },
+  {
+   "path": "images/med/M14.jpg",
+   "sha256": "c727db8eb9bd42267f2850d9d310df07fb806f4158cad5f6f6dd61f76e9783cd",
+   "size": 44567
+  },
+  {
+   "path": "images/med/M15.jpg",
+   "sha256": "09db6790bf7293d0a0e62708bf6659dd519b5faf22cc545f461e0543c5227d5c",
+   "size": 19000
+  },
+  {
+   "path": "images/med/M16-iv.jpg",
+   "sha256": "f3f31d8191d6ba76aae26f7fce5c59322129eca05d5dc075e178d7cebd4c4fc6",
+   "size": 28683
+  },
+  {
+   "path": "images/med/M16-lyoc.jpg",
+   "sha256": "7f8c85c1539427af6de1b0bcf4df0e8e2b41bda06216a80b4e8c1c1c8e454568",
+   "size": 34682
+  },
+  {
+   "path": "images/med/M17.jpg",
+   "sha256": "2a7c83c7e4c8ff6176b67ceaeee1bd6b5c7bd47e05f5987336eb1ca8923f8b99",
+   "size": 40572
+  },
+  {
+   "path": "images/med/M19.jpg",
+   "sha256": "3e4845ab13af9a255e3cfc84e31cd92ef5055191b638ca4207514536844bf22b",
+   "size": 44373
+  },
+  {
+   "path": "images/med/M2.jpg",
+   "sha256": "b6cb1a5b666a510c07b27c78128c491737f35112e39e0339325af2336d13b395",
+   "size": 34630
+  },
+  {
+   "path": "images/med/M20.jpg",
+   "sha256": "72eea84ec9bbaa5aa1609f48d49c67975e882413cf509d35f53ca24297b84938",
+   "size": 41137
+  },
+  {
+   "path": "images/med/M3.jpg",
+   "sha256": "c470527a0ddf5cb15fbe3154101bfcb244033600d5c7f6c7f1075b97b23bbd19",
+   "size": 59152
+  },
+  {
+   "path": "images/med/M4.jpg",
+   "sha256": "547abfd465bf1a3fc5fa577d7eff55f8b47c20ffbac1c1a11ebf98a0ab8c1383",
+   "size": 73703
+  },
+  {
+   "path": "images/med/M5.jpg",
+   "sha256": "057220375ac7c23fac41d3ee3cdcba8e527e57523ffbd74f997fe5518216551a",
+   "size": 24400
+  },
+  {
+   "path": "images/med/M6.jpg",
+   "sha256": "62aaa328a6034c1f5ff00dd369910de68e84b26c61eb2da584f1407ff69e72ce",
+   "size": 50317
+  },
+  {
+   "path": "images/med/M7.jpg",
+   "sha256": "1243bc3ea8cbb6b3ade72088c1a9703ae350e846c37f0cccee9d30af0dd72612",
+   "size": 22263
+  },
+  {
+   "path": "images/med/M8.jpg",
+   "sha256": "53a0346d75b1f26b1bd8db026aa2c33fe85a6b1bf91248bb2f56bb9f342621fc",
+   "size": 62467
+  },
+  {
+   "path": "images/med/M9.jpg",
+   "sha256": "264fb2179169dbce46eaf722f087e63eab40e9f4f2d8438df68f14f6a3ee5ced",
+   "size": 20384
+  },
+  {
+   "path": "index.html",
+   "sha256": "1aadfa4bd47366e4b29c11dbed6c6dfe3cc7611149064ddd87ec710ae65ca805",
+   "size": 1409
+  },
+  {
+   "path": "poche.css",
+   "sha256": "3a9302a8b43440c61a2cb25320e16a543a4c811c03e2c7c39129112913342083",
+   "size": 4634
+  },
+  {
+   "path": "poche.js",
+   "sha256": "bf0f07941bf59d43a9845d8914992431ac59df069154f5108eb022303aabee14",
+   "size": 19378
+  },
+  {
+   "path": "style.css",
+   "sha256": "b86f7825935aadc11d88279391f8e9fc30e3ee8342d649b4c6f858c39ceed71b",
+   "size": 62922
+  }
+ ]
+}

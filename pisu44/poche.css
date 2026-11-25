@@ -1,0 +1,55 @@
+/* PISU 44, format poche : une colonne, pensée pour le téléphone ; cibles ≥ 44 px ; mode clair et sombre (variables de style.css). */
+body{padding:0 0 calc(24px + env(safe-area-inset-bottom));font-size:16px}
+.barre{position:sticky;top:0;z-index:20;display:flex;gap:8px;align-items:center;padding:calc(6px + env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) 6px max(10px, env(safe-area-inset-left));background:var(--panel);border-bottom:1px solid var(--line)}
+.marque{display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--ink);font-weight:900;flex:none;min-height:44px}
+.marque img{height:34px;width:auto;background:#c4161c;border-radius:8px;padding:3px}
+.champ{flex:1;min-width:0;display:flex;align-items:center;gap:6px;border:2px solid var(--line);border-radius:999px;padding:0 12px;background:var(--soft);min-height:44px}
+.champ input{flex:1;min-width:0;border:none;background:none;color:var(--ink);font:inherit;outline:none}
+.b.rond{min-width:44px;min-height:44px;padding:0;display:inline-grid;place-items:center;flex:none;text-decoration:none}
+.res{position:absolute;left:8px;right:8px;top:100%;margin:4px 0 0;padding:4px;list-style:none;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 24px rgb(0 0 0 / .2);max-height:70dvh;overflow:auto}
+.res a{display:block;padding:10px;min-height:44px;text-decoration:none;color:var(--ink);border-radius:8px}
+.res a:hover,.res a:focus{background:var(--soft)}
+.res .ext{display:block;color:var(--muted);font-size:13px}
+.res .vide{padding:10px;color:var(--muted)}
+main#app{max-width:760px;margin:0 auto;padding:10px max(12px, env(safe-area-inset-left)) 0}
+.bloc{margin:0 0 18px}
+.bloc h2{font-size:15px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:10px 0 6px}
+.ae{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ae-col h3{font-size:13px;margin:0 0 6px;color:var(--muted)}
+@media (max-width:520px){ .ae{grid-template-columns:1fr} }
+.ligne{display:flex;gap:8px;align-items:center;min-height:48px;padding:8px 10px;margin:0 0 6px;border:1px solid var(--line);border-radius:12px;background:var(--panel);text-decoration:none;color:var(--ink);font-weight:650;line-height:1.25}
+.ligne small{color:var(--muted);font-weight:500}
+.ligne .code{flex:none}
+.ligne .pr-n{margin-left:auto;flex:none;min-width:22px;height:22px;border-radius:11px;background:var(--warn-line);color:#000;font-size:12px;font-weight:900;display:grid;place-items:center}
+.p-tete{display:flex;gap:8px;align-items:flex-start;margin:4px 0 8px}
+.p-tete h1{font-size:20px;line-height:1.25;margin:0}
+.p-tete h1 small{color:var(--muted);font-weight:600;font-size:15px}
+.ae-b{flex:none;min-height:44px;display:inline-flex;align-items:center;text-decoration:none;font-weight:900}
+.seg{position:sticky;top:calc(57px + env(safe-area-inset-top));z-index:10;display:flex;gap:4px;padding:6px 0;background:var(--bg);overflow-x:auto;scrollbar-width:none}
+.seg::-webkit-scrollbar{display:none}
+.seg-b{flex:1 0 auto;min-height:44px;display:flex;align-items:center;justify-content:center;padding:0 12px;border:2px solid var(--line);border-radius:999px;text-decoration:none;color:var(--ink);font-weight:800;background:var(--panel);white-space:nowrap}
+.seg-b[aria-current="true"]{background:var(--red);border-color:var(--red);color:#fff}
+.seg-b small{font-weight:900;opacity:.85;margin-left:4px}
+.contenu{padding:4px 0 10px}
+.contenu .fiche{font-size:16px}
+.fiche table{display:block;overflow-x:auto;max-width:100%}
+.photo img{max-width:100%;height:auto;border-radius:10px;margin-top:10px}
+.photo figcaption{font-size:13px;color:var(--muted)}
+.protos{margin:0 0 6px}
+.petit{font-size:14px;margin:0 0 8px}
+.ecart-l{border-top:1px solid var(--line);padding:8px 0;font-size:14px}
+.ecart-l .lab{display:inline-block;font-size:11px;font-weight:900;text-transform:uppercase;color:var(--muted);min-width:110px}
+/* logigramme poche : lisible, non cliquable sauf les renvois */
+.logi .lg-n{cursor:default;font-size:16px}
+.logi .lg-n:hover{box-shadow:none}
+.logi .lg-lab{cursor:default}
+.logi .lg-goto{display:block;text-align:center;text-decoration:none;min-height:44px;line-height:28px}
+.logi .renvois{display:block;margin-top:6px}
+.logi .renvois .b{min-height:44px;display:inline-flex;align-items:center}
+.lg-nw.vise .lg-n{box-shadow:0 0 0 4px var(--red)}
+.notes-logi{margin-top:14px}
+.pied{max-width:760px;margin:20px auto 0;padding:0 14px;font-size:12.5px;color:var(--muted)}
+@media (max-width:700px){ .marque span{display:none} }
+[hidden]{display:none !important}
+.p-tete .pt-tx{flex:1;min-width:0}
+.p-tete .pt-tx p{margin:4px 0 0;font-size:13px}
