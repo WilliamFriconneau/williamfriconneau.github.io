@@ -30,13 +30,14 @@
   function blocConfirmer(code) {
     const { inc, cor } = errataPour(code);
     const d = h("div");
-    if (cor.length) d.appendChild(h("div", { class: "corrige", id: "ecarts" }, `<h3>Écarts au PDF</h3><p class="petit">Le PDF du PISU 2024 fait foi. Ces passages sont marqués « écart au PDF » dans les textes.</p>` +
+    if (cor.length) d.appendChild(h("div", { class: "corrige", id: "ecarts" }, `<h3>Écarts au PDF</h3><p class="petit">Le PDF du PISU 2024 fait foi. Le carnet suit ici un autre texte que le PDF.</p>` +
       cor.map(r => `<div class="ecart-l"><b>${r.n}. ${r.ou}</b><div><span class="lab">Le PDF écrit</span> ${r.pdf}</div><div><span class="lab">Le carnet écrit</span> ${r.wiki}</div><div><span class="lab">Pourquoi</span> ${r.pourquoi}</div></div>`).join("")));
     if (inc.length) d.appendChild(h("div", { class: "confirmer" }, `<h3>À confirmer par le SSSM 44</h3><p class="petit">Incohérences relevées dans le PDF (relevé du ${ER.date}), montrées telles quelles.</p><ul>${inc.map(r => `<li><span class="grav ${r.grav}">${r.grav}</span><b>${r.ou}</b> : ${r.constat}</li>`).join("")}</ul>`));
     if (!cor.length && !inc.length) d.appendChild(h("p", { class: "vide" }, "Aucun écart ni point à confirmer relevé pour cette page."));
     return d;
   }
-  const ecartHtml = e => ` <span class="ecart">écart au PDF ${esc(e[0])}</span><span class="ecart-txt"> (${esc(e[1])})</span>`;
+  // les écarts au PDF ne s'affichent pas dans les pages : ils sont listés dans « À confirmer »
+  const ecartHtml = () => "";
 
   // ------------------------------------------------------------- logigramme : suite verticale, branches côte à côte ou empilées
   const KIND = {
@@ -45,11 +46,62 @@
     renvoi: ["Renvoi", "renvoi"], fin: ["Fin du logigramme", "fin"],
   };
   const estQuinze = n => n.k === "appel" && /^\s*(☎\s*)?15\s*$/.test(n.txt);
+  const PICTO15 = '<img class="picto15" src="images/icones/appel15.svg" alt="Appel CRRA 15">';
   const premiereLigne = n => estQuinze(n) ? "Appel CRRA 15" : (n.txt || "").split("\n")[0].trim().slice(0, 90);
-  function renvois(n) {
-    if (!/PISU|PSSO|Appliquer/i.test(n.txt)) return "";
-    const codes = [...new Set((n.txt.match(/\b([1-9][AE]|[12]AT|[1-5]SSO)\b/g) || []))].filter(c => P[c]);
-    return codes.length ? `<span class="renvois">${codes.map(c => `<a class="b" href="#/p/${c}">Ouvrir le ${c}</a>`).join(" ")}</span>` : "";
+  // cibles d'un nœud : fiches médicament et protocoles cités
+  function cibles(n) {
+    const t = (n.meds || []).filter(m => M[m]).map(m => {
+      const d = M[m];
+      return { href: `#/med/${m}`, lab: `Fiche ${m} · ${esc(d.spe || d.dci)}` };
+    });
+    if (/PISU|PSSO|Appliquer/i.test(n.txt))
+      [...new Set((n.txt.match(/\b([1-9][AE]|[12]AT|[1-5]SSO)\b/g) || []))].filter(c => P[c])
+        .forEach(c => t.push({ href: `#/p/${c}`, lab: `Ouvrir le ${c}` }));
+    return t;
+  }
+  // ------------------------------------------------------------- infos d'un nœud : ce que disent la fiche, le protocole, les points à confirmer
+  const VID = window.PISU_VIDEOS || {};
+  function videoPour(m, code) {
+    const vs = VID[m] || [];
+    if (!vs.length) return null;
+    const enf = /E$/.test(code);
+    return vs.find(v => enf === /enfant/i.test(v.nom) && !(enf && /adulte/i.test(v.nom))) || vs[0];
+  }
+  const videoHtml = v => `<figure class="prep"><video src="${v.f}" muted loop playsinline controls preload="metadata"></video><figcaption>${esc(v.nom)}</figcaption></figure>`;
+  const VIDES = new Set("avec dans pour sans plus moins puis entre selon apres avant chez etre faire fait cette celui elle sont tout tous toute toutes adulte enfant mmhg mg/kg victime".split(" "));
+  const mots = s => new Set((s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").match(/[a-z0-9]{4,}/g)?.filter(w => !VIDES.has(w)) || []);
+  const BLOCS = {};
+  function blocs(code) {
+    if (BLOCS[code]) return BLOCS[code];
+    const p = P[code], out = [];
+    for (const [src, html] of [["Fiche", p.fiche], ["Protocole", p.protocole]]) {
+      if (!html) continue;
+      const d = document.createElement("div"); d.innerHTML = html;
+      d.querySelectorAll("p, li, tr").forEach(e => {
+        if (e.querySelector("p, li, tr")) return;
+        const t = e.textContent.replace(/\s+/g, " ").trim();
+        if (t.length < 12 || t.length > 420) return;
+        e.querySelectorAll("img").forEach(i => i.remove());
+        out.push({ src, html: e.tagName === "TR" ? [...e.children].map(c => c.innerHTML).filter(Boolean).join(" · ") : e.innerHTML, m: mots(t) });
+      });
+    }
+    return (BLOCS[code] = out);
+  }
+  function infosNoeud(code, n) {
+    if (n.k === "titre") return "";
+    const nm = mots(n.txt.replace(/M\d+/g, ""));
+    if (!nm.size && !(n.meds || []).length && !(BOU[code] || {})[n.id]) return "";
+    const score = m => [...nm].filter(w => m.has(w)).length;
+    const vus = new Set();
+    const choisis = blocs(code).map(b => ({ b, s: score(b.m) })).filter(x => x.s >= Math.min(2, nm.size))
+      .sort((a, b) => b.s - a.s).filter(x => { const k = x.b.html; if (vus.has(k)) return false; vus.add(k); return true; }).slice(0, 3);
+    let html = choisis.map(x => `<div class="inf-b"><span class="inf-src">${x.b.src}</span>${x.b.html}</div>`).join("");
+    const bo = (BOU[code] || {})[n.id];
+    if (bo) html = `<div class="inf-b"><span class="inf-src">Répétition</span>${esc(bo.rythme)}. Arrêt : ${esc(bo.arret)}</div>` + html;
+    (n.meds || []).forEach(m => { const v = videoPour(m, code); if (v) html += videoHtml(v); });
+    const inc = errataPour(code).inc.map(r => ({ r, s: score(mots(r.constat)) })).filter(x => x.s >= 2).sort((a, b) => b.s - a.s)[0];
+    if (inc) html += `<div class="inf-b conf"><span class="inf-src">À confirmer</span>${esc(inc.r.constat)}</div>`;
+    return html;
   }
   function structure(L) {
     const out = {};
@@ -93,8 +145,14 @@
         if (it.t === "n") {
           const n = byId[it.id], [titre, cl] = KIND[n.k] || KIND.action;
           const wrap = h("div", { class: "lg-nw", id: "n-" + n.id });
-          wrap.appendChild(h("div", { class: `lg-n k-${cl}` }, (n.k === "question" ? "" : `<span class="lg-k">${titre}</span>`) + `<span class="lg-tx">${estQuinze(n) ? "☎ 15" : n.html}</span>` + (n.ecart ? ecartHtml(n.ecart) : "") + renvois(n)));
-          if (bou[n.id]) wrap.appendChild(h("div", { class: "lg-boucle" }, `<span class="fl-retour" aria-hidden="true"></span><b>↻ Répéter</b> ${esc(bou[n.id].rythme)}<small>Arrêt : ${esc(bou[n.id].arret)}</small>`));
+          const cs = cibles(n), inf = infosNoeud(code, n);
+          const contenu = (n.k === "question" ? "" : `<span class="lg-k">${titre}</span>`) + `<span class="lg-tx">${estQuinze(n) ? PICTO15 : n.html}</span>` + (n.ecart ? ecartHtml(n.ecart) : "");
+          const liens = cs.length ? `<span class="renvois">${cs.map(c => `<a class="b" href="${c.href}">${c.lab} ›</a>`).join(" ")}</span>` : "";
+          const noeud = h("div", inf ? { class: `lg-n k-${cl} a-info`, role: "button", tabindex: "0", "aria-expanded": "false" } : { class: `lg-n k-${cl}` },
+            contenu + liens + (inf ? `<span class="lg-plus" aria-hidden="true">i</span>` : ""));
+          wrap.appendChild(noeud);
+          if (inf) wrap.appendChild(h("div", { class: "lg-info", hidden: "" }, inf));
+          if (bou[n.id]) wrap.appendChild(h("div", { class: "lg-boucle" }, `<span class="fl-retour" aria-hidden="true"></span><b>↻ Répéter</b> ${esc(bou[n.id].rythme)}`));
           parent.appendChild(wrap);
         } else if (it.t === "goto") {
           const n = byId[it.id];
@@ -116,6 +174,24 @@
       });
     }
     dessiner(structure(L), lg);
+    // toucher ou clic : l'info s'ouvre sous le nœud ; survol à la souris : elle s'affiche par-dessus
+    const basculer = (n, ouvrir) => {
+      const i = n.nextElementSibling; if (!i || !i.classList.contains("lg-info")) return;
+      ouvrir = ouvrir ?? i.hidden;
+      i.hidden = !ouvrir; n.setAttribute("aria-expanded", String(ouvrir));
+      i.querySelectorAll("video").forEach(v => { if (ouvrir && !matchMedia("(prefers-reduced-motion: reduce)").matches) v.play().catch(() => {}); else v.pause(); });
+    };
+    lg.addEventListener("click", e => {
+      if (e.target.closest("a")) return;
+      const n = e.target.closest(".lg-n.a-info"); if (!n) return;
+      n.parentElement.classList.remove("survol");
+      basculer(n);
+    });
+    lg.addEventListener("keydown", e => { const n = e.target.closest?.(".lg-n.a-info"); if (n && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); basculer(n); } });
+    if (matchMedia("(hover: hover) and (pointer: fine)").matches) {
+      lg.addEventListener("mouseover", e => { const w = e.target.closest(".lg-nw"); if (!w || w.classList.contains("survol")) return; const n = $(".lg-n.a-info", w); if (n && n.getAttribute("aria-expanded") === "false") { w.classList.add("survol"); basculer(n, true); } });
+      lg.addEventListener("mouseout", e => { const w = e.target.closest(".lg-nw.survol"); if (!w || w.contains(e.relatedTarget)) return; w.classList.remove("survol"); basculer($(".lg-n.a-info", w), false); });
+    }
     const z = h("div", { class: "logi" });
     z.appendChild(lg);
     if (L.notes && L.notes.length) {
@@ -140,21 +216,25 @@
     const p = P[c];
     return `<a class="ligne" href="#/p/${c}"><span class="code ${classeCode(c)}">${c}</span><span>${esc(p.titre)}</span>${errataPour(c).inc.length ? `<span class="pr-n" title="points à confirmer">${errataPour(c).inc.length}</span>` : ""}</a>`;
   }
-  function accueil() {
+  const ACCUEIL = [
+    { id: "adultes", titre: "Adultes", rendre: z => z.innerHTML = `<section class="bloc"><h2>Adulte et enfant ≥ 15 ans</h2>${[1,2,3,4,5,6,7,8,9].filter(i => P[i + "A"]).map(i => lienCode(i + "A")).join("")}</section>` },
+    { id: "enfants", titre: "Enfants", rendre: z => z.innerHTML = `<section class="bloc"><h2>Enfant &lt; 15 ans</h2>${[1,2,3,4,5,6,7,8,9].filter(i => P[i + "E"]).map(i => lienCode(i + "E")).join("")}</section>` },
+    { id: "reste", titre: "Le reste", rendre: z => {
+      const gens = [...ORDRE_GEN.filter(c => P[c]), ...Object.keys(P).filter(c => estGen(c) && !ORDRE_GEN.includes(c))];
+      z.innerHTML = `<section class="bloc"><h2>Actes de télémédecine</h2>${PROTO_AT.filter(c => P[c]).map(lienCode).join("")}</section>`
+        + `<section class="bloc"><h2>Soutien sanitaire opérationnel</h2>${PROTO_SSO.filter(c => P[c]).map(lienCode).join("")}</section>`
+        + `<section class="bloc"><h2>Médicaments</h2>${Object.values(M).map(m => `<a class="ligne" href="#/med/${m.code}"><span class="code med">${m.code}</span><span>${esc(m.dci)} <small>${esc(m.spe)}</small></span></a>`).join("")}</section>`
+        + `<section class="bloc"><h2>Généralités et annexes</h2>${gens.map(c => `<a class="ligne" href="#/p/${c}"><span>${esc(P[c].titre)}</span></a>`).join("")}<a class="ligne" href="#/confirmer"><span>Points à confirmer sans protocole précis</span></a></section>`;
+    } },
+  ];
+  function accueil(partie) {
     document.title = "PISU 44";
-    const s = h("div", { class: "accueil" });
-    let html = `<section class="bloc"><h2>Protocoles</h2><div class="ae"><div class="ae-col"><h3>Adulte et enfant ≥ 15 ans</h3>`;
-    for (let i = 1; i <= 9; i++) if (P[i + "A"]) html += lienCode(i + "A");
-    html += `</div><div class="ae-col"><h3>Enfant &lt; 15 ans</h3>`;
-    for (let i = 1; i <= 9; i++) if (P[i + "E"]) html += lienCode(i + "E");
-    html += `</div></div></section>`;
-    html += `<section class="bloc"><h2>Actes de télémédecine</h2>${PROTO_AT.filter(c => P[c]).map(lienCode).join("")}</section>`;
-    html += `<section class="bloc"><h2>Soutien sanitaire opérationnel</h2>${PROTO_SSO.filter(c => P[c]).map(lienCode).join("")}</section>`;
-    html += `<section class="bloc"><h2>Médicaments</h2>${Object.values(M).map(m => `<a class="ligne" href="#/med/${m.code}"><span class="code med">${m.code}</span><span>${esc(m.dci)} <small>${esc(m.spe)}</small></span></a>`).join("")}</section>`;
-    const gens = [...ORDRE_GEN.filter(c => P[c]), ...Object.keys(P).filter(c => estGen(c) && !ORDRE_GEN.includes(c))];
-    html += `<section class="bloc"><h2>Généralités et annexes</h2>${gens.map(c => `<a class="ligne" href="#/p/${c}"><span>${esc(P[c].titre)}</span></a>`).join("")}<a class="ligne" href="#/confirmer"><span>Points à confirmer sans protocole précis</span></a></section>`;
-    s.innerHTML = html;
-    app.appendChild(s);
+    let id = partie;
+    if (!id) { try { id = localStorage.getItem("pisu44-accueil"); } catch (e) {} }
+    const actif = ACCUEIL.find(a => a.id === id) || ACCUEIL[0];
+    try { localStorage.setItem("pisu44-accueil", actif.id); } catch (e) {}
+    onglets(ACCUEIL, actif, "#");
+    app.lastChild.classList.add("accueil");
   }
   function pageProto(code, partie, cible) {
     const p = P[code];
@@ -193,6 +273,7 @@
     const { inc, cor } = errataPour(code);
     const liste = [{ id: "fiche", titre: "Fiche", rendre: z => {
       if (m.protos.length) z.appendChild(h("p", { class: "protos" }, `Protocoles : ${m.protos.map(c => `<a href="#/p/${c}">${c}</a>`).join(" · ")}`));
+      if ((VID[code] || []).length) z.appendChild(h("div", { class: "preps" }, `<h2>Préparation</h2>${VID[code].map(videoHtml).join("")}`));
       z.appendChild(fiche(m.fiche));
       const f = figureMed(code); if (f) z.appendChild(f);
     } }];
@@ -270,13 +351,25 @@
     const r = decodeURIComponent(location.hash || "#/");
     app.textContent = "";
     window.scrollTo(0, 0);
-    $("#accueil").hidden = r === "#/" || r === "#";
+    const home = r.match(/^#\/?(adultes|enfants|reste)?$/);
+    $("#accueil").hidden = !!home;
     let m;
     if ((m = r.match(/^#\/p\/([^/]+)(?:\/([a-z]+))?(?:\/(.+))?$/)) && P[m[1]]) pageProto(m[1], m[2], m[3]);
     else if ((m = r.match(/^#\/med\/(M\d+)(?:\/([a-z]+))?$/)) && M[m[1]]) pageMed(m[1], m[2]);
     else if (r === "#/confirmer") pageConfirmer();
-    else accueil();
+    else accueil(home && home[1]);
   }
-  window.addEventListener("hashchange", route);
+  // transition : la page glisse doucement, la VLI traverse l'écran gyrophare allumé
+  const VLI = `<svg viewBox="-30 -17 60 25" aria-hidden="true"><path d="M-27 3 L-27 -7 L-25 -11.5 L4 -12 L12 -5.5 L24 -3.5 L27 0 L27 3 Z" fill="#c62828" stroke="#5a0b0b" stroke-width=".8"/><path d="M-23.5 -10.5 L3 -10.8 L9.5 -5.8 L-23.5 -5.8 Z" fill="#263238"/><path d="M-9 -10.8 v5 M-3 -10.8 v5" stroke="#c62828" stroke-width="1.2"/><rect x="-27" y="-5" width="51" height="1.6" fill="#ffeb3b"/>${[...Array(12)].map((_, k) => `<path d="M${-24 + 4 * k} 2.6 l2 -2.6 h2 l-2 2.6 z" fill="#ffeb3b"/>`).join("")}<rect class="gy g1" x="-7" y="-14.5" width="7" height="2.5" rx="1"/><rect class="gy g2" x="0" y="-14.5" width="7" height="2.5" rx="1"/><circle cx="-16" cy="3.5" r="4.4" fill="#212121"/><circle cx="-16" cy="3.5" r="2.2" fill="#b0bec5"/><circle cx="16" cy="3.5" r="4.4" fill="#212121"/><circle cx="16" cy="3.5" r="2.2" fill="#b0bec5"/><path d="M23.5 -2.5 l3 .6 v1.4 l-3 -.4 z" fill="#fff59d"/></svg>`;
+  const calme = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function transition() {
+    if (calme()) return;
+    app.classList.remove("entre"); void app.offsetWidth; app.classList.add("entre");
+    const old = $(".vli-passe"); if (old) old.remove();
+    const v = h("div", { class: "vli-passe", "aria-hidden": "true" }, VLI);
+    document.body.appendChild(v);
+    v.addEventListener("animationend", () => v.remove());
+  }
+  window.addEventListener("hashchange", () => { route(); transition(); });
   route();
 })();

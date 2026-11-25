@@ -20,7 +20,7 @@ main#app{max-width:760px;margin:0 auto;padding:10px max(12px, env(safe-area-inse
 .ligne{display:flex;gap:8px;align-items:center;min-height:48px;padding:8px 10px;margin:0 0 6px;border:1px solid var(--line);border-radius:12px;background:var(--panel);text-decoration:none;color:var(--ink);font-weight:650;line-height:1.25}
 .ligne small{color:var(--muted);font-weight:500}
 .ligne .code{flex:none}
-.ligne .pr-n{margin-left:auto;flex:none;min-width:22px;height:22px;border-radius:11px;background:var(--warn-line);color:#000;font-size:12px;font-weight:900;display:grid;place-items:center}
+.ligne .pr-n{position:static;margin-left:auto;flex:none;min-width:22px;height:22px;border-radius:11px;background:var(--warn-line);color:#000;font-size:12px;font-weight:900;display:grid;place-items:center}
 .p-tete{display:flex;gap:8px;align-items:flex-start;margin:4px 0 8px}
 .p-tete h1{font-size:20px;line-height:1.25;margin:0}
 .p-tete h1 small{color:var(--muted);font-weight:600;font-size:15px}
@@ -39,7 +39,7 @@ main#app{max-width:760px;margin:0 auto;padding:10px max(12px, env(safe-area-inse
 .petit{font-size:14px;margin:0 0 8px}
 .ecart-l{border-top:1px solid var(--line);padding:8px 0;font-size:14px}
 .ecart-l .lab{display:inline-block;font-size:11px;font-weight:900;text-transform:uppercase;color:var(--muted);min-width:110px}
-/* logigramme poche : lisible, non cliquable sauf les renvois */
+/* logigramme poche : les nœuds qui mènent à une fiche (médicament, protocole) sont des liens */
 .logi .lg-n{cursor:default;font-size:16px}
 .logi .lg-n:hover{box-shadow:none}
 .logi .lg-lab{cursor:default}
@@ -53,3 +53,50 @@ main#app{max-width:760px;margin:0 auto;padding:10px max(12px, env(safe-area-inse
 [hidden]{display:none !important}
 .p-tete .pt-tx{flex:1;min-width:0}
 .p-tete .pt-tx p{margin:4px 0 0;font-size:13px}
+.logi .picto15{height:64px}
+.ecart,.ecart-txt{display:none!important}
+/* infos d'un nœud (survol ou toucher) */
+.logi .lg-nw{position:relative}
+.logi .lg-n.a-info{cursor:pointer;position:relative;padding-right:30px}
+.logi .lg-n.a-info:focus-visible{box-shadow:0 0 0 3px rgba(168,25,26,.35);outline:none}
+.lg-plus{position:absolute;top:6px;right:6px;width:20px;height:20px;border-radius:50%;border:1.5px solid currentColor;font:italic 800 13px/17px Georgia,serif;text-align:center;opacity:.55}
+.lg-n[aria-expanded="true"] .lg-plus{opacity:1;background:var(--red);color:#fff;border-color:var(--red)}
+.lg-info{margin:6px 0 0;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--red);border-radius:10px;font-size:14px;text-align:left;box-shadow:0 6px 20px rgba(0,0,0,.12)}
+.lg-nw.survol .lg-info{position:absolute;left:0;right:0;top:100%;z-index:20;min-width:min(340px,90vw)}
+.inf-b{padding:6px 0;border-top:1px solid var(--line)}
+.inf-b:first-child{border-top:0}
+.inf-b p{margin:0}
+.inf-src{display:block;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.inf-b.conf .inf-src{color:var(--warn-ink,#8a5a00)}
+.prep{margin:8px 0}
+.prep video{display:block;width:100%;max-width:480px;border-radius:8px;background:#fff;border:1px solid var(--line)}
+.prep figcaption{font-size:12.5px;color:var(--muted);margin-top:4px}
+.preps{margin-bottom:14px}
+@media (prefers-reduced-motion: no-preference){ .lg-info:not([hidden]){animation:inf-in .16s ease-out} }
+@keyframes inf-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+/* logigramme sur téléphone : texte d'abord, sans étiquettes de type, branches peu indentées */
+.logi .lg-k{display:none}
+.logi .lg-n{padding:10px 12px;line-height:1.35}
+.logi .renvois{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:8px}
+.logi .renvois .b{background:transparent;color:var(--red);border:1.5px solid var(--red);border-radius:999px;padding:4px 12px;font-size:14px;font-weight:800;text-decoration:none}
+.logi .lg-boucle{padding:6px 10px 6px 30px;font-size:14px}
+@media (max-width:700px){
+  .logi .lg-split{gap:8px}
+  .logi .lg-br{padding-left:6px;border-left-width:3px}
+  .logi .lg-br .lg-br{padding-left:4px}
+  .logi .lg-lab{font-size:14px;padding:2px 12px;margin:6px 0 4px}
+  .logi .lg-n{font-size:15.5px}
+  .logi .lg-n .lg-tx{display:block}
+}
+/* transitions */
+@media (prefers-reduced-motion: no-preference){
+  #app.entre{animation:page-in .28s ease-out}
+}
+@keyframes page-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.vli-passe{position:fixed;left:0;bottom:calc(env(safe-area-inset-bottom) + 10px);width:72px;height:30px;z-index:100;pointer-events:none;animation:vli-roule .9s cubic-bezier(.45,.05,.4,1) forwards}
+.vli-passe svg{width:100%;height:100%;overflow:visible}
+.vli-passe .gy{fill:#1e88e5}
+.vli-passe .g1{animation:gyro .18s steps(1) infinite}
+.vli-passe .g2{animation:gyro .18s steps(1) infinite reverse}
+@keyframes vli-roule{from{transform:translateX(-90px)}to{transform:translateX(calc(100vw + 20px))}}
+@keyframes gyro{0%{fill:#1e88e5;filter:drop-shadow(0 0 3px #42a5f5)}50%{fill:#0d2a55;filter:none}}
