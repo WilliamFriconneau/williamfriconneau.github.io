@@ -815,3 +815,45 @@ body.mode-interv .sous-tabs .tab{min-height:44px}
 /* téléphone : l'annonce ne doit pas cacher le geste ; petite, puis presque effacée après 3 s */
 @media (max-width:600px){ .annonce{top:4px;left:4px;padding:4px 8px 5px;border-radius:10px;font-size:12px;line-height:1.15} .annonce small{font-size:9px;margin-bottom:1px} .annonce::after{display:none} .annonce.pop{animation:annoncePop .25s ease-out,annonceRepli .4s ease-in 3s forwards} }
 @keyframes annonceRepli{to{opacity:.15}}
+
+/* ===== logigramme d'abord : le logigramme occupe l'écran, l'étape en cours et son animation sont à côté du nœud en cours ===== */
+.ecran.logi-1er{max-width:1500px}
+.ec-milieu.logi-1er{flex:1 1 auto;min-height:0;overflow:hidden;display:block}
+.ec-logi{height:100%;overflow-y:auto;overscroll-behavior:contain;background:var(--logi-bg,var(--soft));border:1px solid var(--line);border-radius:12px;scroll-padding-top:6px}
+.ec-logi .logi-col{padding:8px 10px 0}
+.ec-logi .logi-col .aide{margin:0 0 8px;font-size:13px;color:var(--muted)}
+.ec-logi .lg{padding-bottom:70dvh}
+.ec-logi .lg-n.ici{position:relative;z-index:1}
+.ec-cote{display:flex;flex-direction:column;gap:6px;min-width:0}
+/* le texte de l'étape est lu dans le nœud : la carte ne garde que son badge, ses liens et la fin de branche (le texte reste pour les lecteurs d'écran) */
+.logi-1er .carte-etape{flex:none;border:none;padding:0;background:none;max-height:none;overflow:visible}
+.logi-1er .carte-etape .ce-corps{padding:0}
+.logi-1er .carte-etape .tx{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.logi-1er .carte-etape .renvois{margin-top:4px}
+.logi-1er .carte-etape .fin-tx{font-weight:800;margin-top:4px}
+/* ordinateur : deux colonnes, le nœud en cours en haut de la colonne de gauche, l'animation à sa hauteur à droite */
+@media (min-width:901px){
+  .ec-milieu.logi-1er.deux-col{display:grid;grid-template-columns:minmax(380px,.85fr) minmax(0,1.15fr);gap:0}
+  .deux-col > .ec-cote{overflow-y:auto;overscroll-behavior:contain;padding:0 0 4px 14px;position:relative}
+  .deux-col .lg-n.ici::after{content:"";position:absolute;right:-17px;top:14px;border:9px solid transparent;border-left:12px solid var(--red)}
+  .deux-col > .ec-cote{border-left:4px solid var(--red);margin-left:6px}
+  .logi-1er .scene-box{height:40dvh}
+  .logi-1er .zone-p .scene-wrap{height:40dvh}
+}
+/* téléphone : l'étape s'insère dans le logigramme, sous le nœud en cours */
+@media (max-width:900px){
+  .ec-logi .ec-cote{margin:6px 0 4px;padding:8px;border:3px solid var(--red);border-radius:12px;background:var(--panel)}
+  .ec-logi .ec-cote .scene-box{height:26dvh}
+  .ec-logi .ec-cote .zone-p .scene-wrap{height:27dvh}
+  .ec-logi .lg-split{flex-direction:column;border-top:none;gap:10px}
+  .ec-logi .lg-br{border-left:5px solid var(--muted);padding-left:10px;border-radius:0 0 0 10px}
+  .ec-logi .lg-br.oui{border-left-color:#2e7d32} .ec-logi .lg-br.non{border-left-color:#b71c1c}
+  .ec-logi .lg-lab{align-self:flex-start}
+}
+.ecran.logi-1er{height:calc(100dvh - 12px)}
+body.mode-interv .ecran.logi-1er{height:calc(100dvh - 56px)}
+.ec-milieu.logi-1er.deux-col{grid-template-rows:minmax(0,1fr)}
+.ec-logi{overflow-x:hidden}
+.ec-logi .lg,.ec-logi .lg-br,.ec-logi .lg-nw,.ec-logi .ec-cote{min-width:0;max-width:100%}
+.ec-logi .ec-cote{overflow:hidden}
+.ec-logi .ec-cote svg{max-width:100%}

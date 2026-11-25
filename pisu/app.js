@@ -431,26 +431,24 @@
     const BOU = (window.PISU_BOUCLES || {})[code] || {};
     const auPoids = Object.values(DOSES).flat().some(d => d.mgkg || d.mlkg || (d.choix || []).some(c => c.mgkg));
     if (sansLogi) zone.appendChild(h("p", { class: "note", style: "margin-top:0" }, "Pas de logigramme dans le PISU pour cet acte : les étapes suivent l'ordre du texte, sans branche ajoutée."));
-    // Écran de l'étape : tient dans la hauteur de la fenêtre. En haut : frise des étapes passées et mini-carte ;
+    // Écran de l'étape : tient dans la hauteur de la fenêtre. En haut : frise des étapes passées ; au milieu, le logigramme ;
     // au milieu : l'étape en cours et ce qui se joue (préparation, message, scène) ; en bas, sous le pouce : les commandes.
     const ecran = h("section", { class: "ecran", "aria-label": "Étape en cours" });
     zone.appendChild(ecran);
-    // 1. ligne fine : code et titre, bascule adulte ↔ enfant, mini-carte
+    // 1. ligne fine : code et titre, bascule adulte ↔ enfant
     const ecTitre = h("div", { class: "ec-titre" }, `<a class="b ec-accueil" href="#/" aria-label="Retour à l'accueil du carnet">◀</a><span class="code ${classeCode(code)}">${esc(code)}</span><span class="ec-nom">${esc(P[code].titre)}</span>`);
     const autreAE = paire(code);
     if (autreAE && P[autreAE]) { const a = h("a", { class: "b ae-mini", href: `#/p/${autreAE}`, "aria-label": `Même protocole pour ${/E$/.test(autreAE) ? "l'enfant" : "l'adulte"}` }, `${autreAE} ⇄`); a.onclick = () => { if (deroule.saut) deroule.saut(autreAE); }; ecTitre.appendChild(a); }
-    // logigramme en petit à côté de la scène : suit l'étape, chemin surligné ; toucher un nœud relance de là (ordinateur),
-    // ou ouvre le logigramme en grand (téléphone, cibles trop petites) ; « ⤢ » l'agrandit dans les deux cas
-    const mini = h("div", { class: "minicarte logi-cote" });
-    const miniIn = h("div", { class: "mini-in", "aria-hidden": "true" });
-    const bAgr = h("button", { class: "b logi-agr", type: "button", "aria-label": "Agrandir le logigramme" }, "⤢");
-    mini.append(miniIn, bAgr);
     // 2. frise des étapes passées
     const frise = h("div", { class: "frise-pas", role: "list", "aria-label": "Étapes déjà parcourues : toucher pour y revenir" });
     // 3. carte de l'étape : badge et texte, rien d'autre
     const carte = h("div", { class: "carte-etape", "aria-live": "polite" });
     // 4. milieu : la scène de l'étape en tête, puis les compléments (seringues, jauge, précautions, message…)
-    const milieu = h("div", { class: "ec-milieu" });
+    // logigramme d'abord : il occupe l'écran ; l'animation de l'étape en cours se place à sa droite
+    // (ordinateur) ou juste sous le nœud en cours (téléphone)
+    const milieu = h("div", { class: "ec-milieu logi-1er" });
+    const logiZone = h("div", { class: "ec-logi" });
+    const cote = h("div", { class: "ec-cote" });
     const media = h("div", { class: "ec-media" });
     const sceneBox = h("div", { class: "scene-box" });
     const sc = SC.intervention(sceneBox);
@@ -461,8 +459,8 @@
     const extra = h("div", { class: "ec-extra" });
     media.append(sceneBox, prep);
     infos.append(plateau, saed, extra);
-    milieu.append(media, infos, mini);
-    milieu.classList.add("avec-logi");
+    cote.append(carte, media, infos);
+    milieu.append(logiZone);
     // 5. barre du bas, fixe : une rangée fine (Retour, Pause) puis la ou les actions principales en grand
     const ecBas = h("div", { class: "ec-bas" });
     const barre = h("div");
@@ -471,15 +469,10 @@
     B.el.classList.add("fine");
     const choixBas = h("div", { class: "choix-bas" });
     ecBas.append(barre, choixBas);
-    ecran.append(ecTitre, frise, carte, milieu, ecBas);
-    // logigramme complet : dans une fenêtre plein écran, ouverte depuis la mini-carte
-    const dlg = h("dialog", { class: "dlg-logi", "aria-label": "Logigramme complet" });
-    const dlgTete = h("div", { class: "dlg-tete" }, `<b>Logigramme ${esc(code)}</b>`);
-    const bFermer = h("button", { class: "b", type: "button" }, "Fermer ✕");
-    bFermer.onclick = () => dlg.close();
-    dlgTete.append(bRe, bFermer);
+    ecran.append(ecTitre, frise, milieu, ecBas);
+    ecran.classList.add("logi-1er");
     const lcol = h("div", { class: "logi-col" });
-    lcol.appendChild(h("p", { class: "aide" }, "Toucher une étape ou une branche (OUI, NON) : l'intervention reprend à partir de là."));
+    lcol.appendChild(h("p", { class: "aide" }, "Toucher une étape ou une branche (OUI, NON) pour reprendre de là."));
     const lg = h("div", { class: "lg" });
     lcol.appendChild(lg);
     if (L.notes.length) {
@@ -487,17 +480,7 @@
       L.notes.forEach(id => { const n = byId[id]; nbx.appendChild(h("div", { class: "notes-tx" }, n.html + (n.ecart ? ecartHtml(n.ecart) : ""))); });
       lcol.appendChild(nbx);
     }
-    dlg.append(dlgTete, lcol);
-    zone.appendChild(dlg);
-    const ouvrirLogi = vise => { dlg.showModal(); const q = (vise && lg.querySelector(`.lg-n[data-id="${vise}"]`)) || lg.querySelector(".lg-n.ici"); if (q) q.scrollIntoView({ block: "center" }); };
-    const petitEcran = () => mini.clientWidth < 170;
-    bAgr.onclick = ev => { ev.stopPropagation(); ouvrirLogi(); };
-    mini.onclick = ev => {
-      if (petitEcran()) { const n = ev.target.closest("[data-id]"); ouvrirLogi(n && n.dataset.id); return; }
-      const lab = ev.target.closest(".lg-lab"), br = lab && lab.closest("[data-e]");
-      if (br) { const e = L.edges.find(x => x.id === br.dataset.e); if (e) allerBranche(e, false); return; }
-      const n = ev.target.closest(".lg-n[data-id]"); if (n) allerVers(n.dataset.id, false);
-    };
+    logiZone.appendChild(lcol);
     // bilan de la fiche (cadre « Bilan paramédical » du PISU) : saisi à l'étape de départ, repris dans le Saed
     const BILAN = (() => { const d = document.createElement("div"); d.innerHTML = P[code].fiche || ""; return [...d.querySelectorAll("p.callout.info")].map(p => p.textContent.trim()).filter(Boolean); })();
     const bilan = {};
@@ -574,9 +557,9 @@
       pas.unshift({ ids: [L.start], via: null });
       return pas;
     }
-    function allerVers(id, depuisSchema) { const p = cheminVers(id); if (!p) return; chemin = p; arreterAuto(); if (dlg.open) dlg.close(); rendre(true, depuisSchema); }
-    function allerBranche(e, depuisSchema) { const p = cheminVers(e.s); if (!p) return; p.push({ ids: [e.t], via: e }); chemin = p; arreterAuto(); if (dlg.open) dlg.close(); rendre(true, depuisSchema); }
-    const recommencer = () => { chemin = [{ ids: [L.start], via: null }]; arreterAuto(); if (dlg.open) dlg.close(); rendre(true); };
+    function allerVers(id, depuisSchema) { const p = cheminVers(id); if (!p) return; chemin = p; arreterAuto(); rendre(true, depuisSchema); }
+    function allerBranche(e, depuisSchema) { const p = cheminVers(e.s); if (!p) return; p.push({ ids: [e.t], via: e }); chemin = p; arreterAuto(); rendre(true, depuisSchema); }
+    const recommencer = () => { chemin = [{ ids: [L.start], via: null }]; arreterAuto(); rendre(true); };
     const passages = (k = chemin.length - 1) => { let n = 1; while (k > 0 && chemin[k].boucle) { n++; k--; } return n; };
 
     // ---- mémoire des seringues : recalculée depuis le début du chemin (le retour arrière reste juste)
@@ -724,6 +707,8 @@
       if (s.type === "fin") html += `<div class="fin-tx">Fin du logigramme pour cette branche.</div>`;
       html += `</div>`;
       carte.innerHTML = html;
+      // le texte de l'étape se lit dans le nœud du logigramme : la carte ne garde que ses liens (texte gardé pour les lecteurs d'écran)
+      carte.querySelectorAll(".tx > .renvois").forEach(r => r.parentElement.after(r));
       extra.textContent = "";
       if (bo) extra.appendChild(h("p", { class: "ce-boucle" }, `↻ ${esc(bo.rythme)}. Arrêt : ${esc(bo.arret)}`));
       // bilan de la fiche, à l'étape de départ
@@ -831,7 +816,7 @@
         tous.forEach((mc, i) => { const b = h("button", { class: "b", type: "button", "aria-pressed": "false" }, `${mc} ${esc(M[mc].dci)}`); b.onclick = () => jouerMed(mc, i); mb.appendChild(b); });
         jouerMed(tous[0], 0);
       }
-      // logigramme : chemin surligné, puis mini-carte
+      // logigramme : chemin surligné, puis l'étape placée à côté du nœud en cours
       const vus = new Set(chemin.flatMap(x => x.ids));
       const pris = new Set(chemin.flatMap(x => x.via ? [x.via.id] : (x.par || []).map(e => e.id)));
       const prochains = new Set(s.es ? s.es.map(e => e.t) : []);
@@ -845,48 +830,35 @@
         col.classList.toggle("ecarte", vus.has(e.s) && !pris.has(eid) && !c.ids.includes(e.s));
       });
       lg.classList.add("joue");
-      placerMini();
+      placer(anime);
       try { localStorage.setItem("pisu-derniere", JSON.stringify({ code, pas: chemin.map(x => ({ id: actif(x), via: x.via && x.via.id, boucle: !!x.boucle, choix: x.choix || null })), quand: Date.now() })); } catch (e) {}
       if (anime && ecran.getBoundingClientRect().top !== 0 && (depuisSchema || k === 0)) ecran.scrollIntoView({ block: "start", behavior: SC.mouvementReduit() ? "auto" : "smooth" });
       if (auto && (s.type === "suite" || s.type === "parallele")) setTimeout(() => { if (auto && courant() === c) etapeSuivante(); }, mode === "prep" ? 12000 : 2600);
       else if (auto) arreterAuto();
     }
     function sauverBilan() { try { sessionStorage.setItem("pisu-bilan-" + code, JSON.stringify(bilan)); } catch (e) {} }
-    // mini-carte : copie réduite du logigramme, chemin en couleur, « vous êtes ici »
-    // le logigramme se range à droite de la scène quand il y en a une ; sinon à droite de l'étape (colonne du milieu)
-    function placerMini() {
-      const sw = [...media.querySelectorAll(".scene-wrap")].find(x => x.offsetParent);
-      if (sw) {
-        sw.classList.add("avec-cote"); sw.append(mini); milieu.classList.remove("avec-logi");
-        // la jauge reste au-dessus de la barre du bas : si l'étape a un long texte, la scène rétrécit (pas sous 150 px)
-        requestAnimationFrame(() => {
-          const j = [...sw.parentElement.querySelectorAll(".jauge")].find(x => x.offsetParent); if (!j) return;
-          const trop = j.getBoundingClientRect().bottom - milieu.getBoundingClientRect().bottom + 2;
-          if (trop > 0) sw.style.height = Math.max(150, sw.getBoundingClientRect().height - trop) + "px";
-        });
-      } else { milieu.append(mini); milieu.classList.add("avec-logi"); }
-      majMini();
-    }
-    let lw0 = 0;
-    if (window.ResizeObserver) new ResizeObserver(() => { const w = mini.clientWidth; if (w && Math.abs(w - lw0) > 4 && miniIn.firstElementChild) { lw0 = w; majMini(); } }).observe(mini);
-    function majMini() {
-      lw0 = mini.clientWidth;
-      miniIn.innerHTML = lg.outerHTML;
-      const cl = miniIn.firstElementChild; if (!cl) return;
-      cl.querySelectorAll("[role=button], button").forEach(x => x.setAttribute("tabindex", "-1"));
-      cl.querySelectorAll("a").forEach(x => x.setAttribute("tabindex", "-1"));
-      cl.classList.replace("lg", "lg-mini");
-      const LW = petitEcran() ? 640 : 520;
-      cl.style.width = LW + "px";
-      requestAnimationFrame(() => {
-        const W = mini.clientWidth || 120, Hh = mini.clientHeight || 80, H2 = cl.scrollHeight || 1000;
-        const f = Math.min(W / LW, 1);
-        cl.style.transform = `scale(${f})`;
-        const ici = cl.querySelector(".lg-n.ici");
-        const y = ici ? ici.getBoundingClientRect().top - cl.getBoundingClientRect().top + ici.getBoundingClientRect().height / 2 : 0;
-        miniIn.style.transform = `translateY(${-Math.max(0, Math.min(H2 * f - Hh, y - Hh / 2))}px)`;
+    // l'étape en cours (badge, animation, seringues, message) à droite du nœud sur ordinateur, juste dessous sur téléphone ;
+    // le logigramme défile pour amener le nœud en cours en haut, à hauteur de l'animation
+    const large = window.matchMedia("(min-width: 901px)");
+    function placer(anime) {
+      const ici = lg.querySelector(".lg-n.ici");
+      milieu.classList.toggle("deux-col", large.matches);
+      if (large.matches) { if (cote.parentNode !== milieu) milieu.append(cote); }
+      else if (ici) { const w = ici.closest(".lg-nw"); if (w.nextSibling !== cote) w.after(cote); }
+      if (ici) {
+        const y = ici.getBoundingClientRect().top - logiZone.getBoundingClientRect().top + logiZone.scrollTop - 6;
+        logiZone.scrollTo({ top: Math.max(0, y), behavior: anime && !SC.mouvementReduit() ? "smooth" : "auto" });
+      }
+      cote.scrollTop = 0;
+      // ordinateur : la jauge reste visible dans la colonne ; si l'étape a beaucoup d'infos, la scène rétrécit (pas sous 150 px)
+      if (large.matches) requestAnimationFrame(() => {
+        const sw = [...media.querySelectorAll(".scene-wrap")].find(x => x.offsetParent);
+        const j = sw && [...sw.parentElement.querySelectorAll(".jauge")].find(x => x.offsetParent); if (!j) return;
+        const trop = j.getBoundingClientRect().bottom - cote.getBoundingClientRect().bottom + 2;
+        if (trop > 0) sw.style.height = Math.max(150, sw.getBoundingClientRect().height - trop) + "px";
       });
     }
+    large.addEventListener("change", () => placer(false));
     // une préparation suivie de l'injection, dans une seule animation
     function fusionner(a, b) {
       const objets = { ...a.objets };
