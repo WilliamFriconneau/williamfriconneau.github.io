@@ -42,7 +42,7 @@ main#app{max-width:760px;margin:0 auto;padding:10px max(12px, env(safe-area-inse
 /* logigramme poche : les nœuds qui mènent à une fiche (médicament, protocole) sont des liens */
 .logi .lg-n{cursor:default;font-size:16px}
 .logi .lg-n:hover{box-shadow:none}
-.logi .lg-lab{cursor:default}
+.logi .lg-lab{cursor:pointer;user-select:none}
 .logi .lg-goto{display:block;text-align:center;text-decoration:none;min-height:44px;line-height:28px}
 .logi .renvois{display:block;margin-top:6px}
 .logi .renvois .b{min-height:44px;display:inline-flex;align-items:center}
@@ -138,9 +138,9 @@ button.ligne{width:100%;font:inherit;text-align:left;cursor:pointer}
   .lg-og.oui[aria-selected="true"]{background:#2e7d32;color:#fff} .lg-og.non[aria-selected="true"]{background:#b71c1c;color:#fff}
   .lg-choix.multi>.lg-glisse{display:block;text-align:center;font-size:12.5px;font-weight:700;color:var(--muted);margin:-2px 0 2px;transition:opacity .3s}
   .lg-choix.multi.vu>.lg-glisse{opacity:0;height:0;margin:0;overflow:hidden}
-  .logi .lg-choix.multi>.lg-split{display:flex;flex-direction:row;gap:10px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain;border-top:none;align-items:flex-start;padding:0 2px;transition:height .2s ease}
+  .logi .lg-choix.multi>.lg-split{display:flex;flex-direction:row;gap:12px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain;border-top:none;align-items:flex-start;padding:0 2px;transition:height .2s ease}
   .logi .lg-choix.multi>.lg-split::-webkit-scrollbar{display:none}
-  .logi .lg-choix.multi>.lg-split>.lg-br{flex:0 0 88%!important;scroll-snap-align:center;scroll-snap-stop:always;padding:4px 6px 8px;border:2px solid var(--line);border-left-width:2px;border-radius:12px;opacity:.55;transition:opacity .2s}
+  .logi .lg-choix.multi>.lg-split>.lg-br{flex:0 0 100%!important;scroll-snap-align:start;scroll-snap-stop:always;padding:6px 8px 10px;border:2px solid var(--line);border-left-width:2px;border-radius:12px;box-sizing:border-box}
   .logi .lg-choix.multi>.lg-split>.lg-br.vue{opacity:1}
   .logi .lg-choix.multi>.lg-split>.lg-br.oui{border-color:#2e7d32} .logi .lg-choix.multi>.lg-split>.lg-br.non{border-color:#b71c1c}
   .logi .lg-choix.multi>.lg-split>.lg-br>.lg-lab{display:none}
@@ -153,9 +153,9 @@ button.ligne{width:100%;font:inherit;text-align:left;cursor:pointer}
 .prep-grand img{width:100%;max-width:720px;max-height:calc(100dvh - 60px);object-fit:contain;background:#fff}
 .prep-grand p{color:#fff;font-size:14px;margin:10px 16px;text-align:center}
 /* ------------------------------------------------------------- navigation de terrain : barre du bas au pouce */
-body{padding-bottom:calc(64px + env(safe-area-inset-bottom))}
-.bas{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;background:var(--panel);border-top:1px solid var(--line);padding:0 max(4px, env(safe-area-inset-right)) env(safe-area-inset-bottom) max(4px, env(safe-area-inset-left));box-shadow:0 -4px 16px rgba(0,0,0,.06)}
-.bas a{flex:1 1 0;min-width:0;min-height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;color:var(--muted);font-size:11.5px;font-weight:800;-webkit-tap-highlight-color:transparent}
+body{padding-bottom:calc(66px + env(safe-area-inset-bottom))}
+.bas{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;background:var(--panel);border-top:1px solid var(--line);padding:0 max(4px, env(safe-area-inset-right)) max(4px, calc(env(safe-area-inset-bottom) - 16px)) max(4px, env(safe-area-inset-left));box-shadow:0 -4px 16px rgba(0,0,0,.06)}
+.bas a{flex:1 1 0;min-width:0;min-height:52px;padding-top:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;color:var(--muted);font-size:11.5px;font-weight:800;-webkit-tap-highlight-color:transparent}
 .bas svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .bas a[aria-current="true"]{color:var(--red)}
 .bas a[aria-current="true"] svg{stroke-width:2.3}
@@ -215,3 +215,87 @@ body{padding-bottom:calc(64px + env(safe-area-inset-bottom))}
 @keyframes vd-halo{from{opacity:.25}to{opacity:1}}
 @keyframes vd-sol{to{background-position:-160px 0}}
 @media (prefers-reduced-motion: reduce){ .vli-depart,.vli-passe{display:none} }
+
+/* la victime : poids et âge en réglettes, en tête du protocole */
+.vic{display:grid;gap:4px;margin:6px 0 8px;padding:8px 10px;border:1.5px solid var(--line);border-radius:14px;background:var(--panel)}
+.vic-l{display:grid;grid-template-columns:44px 44px 1fr 44px 64px;align-items:center;gap:4px}
+.vic-l label{font-size:13px;font-weight:900;color:var(--muted)}
+.vic-l input[type=range]{width:100%;accent-color:var(--red);height:44px;margin:0}
+.vic-m,.vic-p{min-width:44px;min-height:44px;border-radius:12px;border:1.5px solid var(--line);background:var(--soft);color:var(--ink);font-size:20px;font-weight:900}
+.vic-l output{font-weight:900;font-size:16px;text-align:right;font-variant-numeric:tabular-nums}
+.vic:not(.rempli) output{color:var(--muted)}
+.vic-raz{justify-self:end;min-height:44px;padding:0 12px;border:none;background:none;color:var(--muted);font-weight:800;font-size:13px;text-decoration:underline}
+@media (max-width:700px){ .vic{padding:6px 8px} .vic-l{grid-template-columns:38px 44px 1fr 44px 58px} }
+/* dose calculée sous le nœud */
+.lg-dose{margin:6px 0 0;display:grid;gap:4px}
+.lg-dose .ds{display:block;padding:8px 10px;border-radius:10px;background:rgba(31,95,153,.12);border-left:4px solid #1f5f99;font-size:15px;text-align:left}
+.lg-dose .ds small{display:block;color:var(--muted);font-size:12.5px}
+.lg-dose .ds-m{display:inline-flex;align-items:center;min-height:44px;font-size:13px;font-weight:900;color:#8a5a00;background:rgba(224,123,0,.15);border-radius:10px;padding:0 10px;margin:0 6px 4px 0;text-decoration:none}
+/* bilan à transmettre au 15 */
+details.saed{margin:6px 0 0;border:2px solid #3b7bd0;border-radius:12px;background:var(--panel);text-align:left}
+details.saed summary{min-height:44px;display:flex;align-items:center;justify-content:center;gap:6px;font-weight:900;color:#3b7bd0;cursor:pointer;list-style:none}
+details.saed summary::-webkit-details-marker{display:none}
+details.saed summary::after{content:"▾";transition:transform .2s}
+details.saed[open] summary::after{transform:rotate(180deg)}
+.saed-c{padding:0 12px 10px;font-size:14.5px}
+.saed-c dl{margin:0}
+.saed-c dt{margin-top:8px;font-weight:900;color:#3b7bd0}
+.saed-c dd{margin:2px 0 0 0;padding-left:10px;border-left:2px solid var(--line)}
+.inf-src2{font-size:11.5px;color:var(--muted);margin-top:10px}
+/* bandeau d'installation */
+.bandeau-inst{display:flex;align-items:center;gap:10px;margin:8px 0 4px;padding:8px 6px 8px 10px;border-radius:14px;background:var(--panel);border:1.5px solid var(--line)}
+.bandeau-inst img{border-radius:10px;flex:none}
+.bandeau-inst p{margin:0;flex:1;font-size:13.5px;line-height:1.35}
+.bi-ok{flex:none;min-height:44px;background:var(--red);color:#fff;border-color:var(--red)}
+.bi-x{flex:none;min-width:44px;min-height:44px;border:none;background:none;color:var(--muted);font-size:22px}
+/* à propos et menu caché */
+.apropos{font-size:12.5px;color:var(--muted);margin:18px 2px 8px;user-select:none;-webkit-user-select:none}
+.confirmer-menu .pr-n{margin-left:auto}
+.lg-dose .ds-dose{display:block;font-size:16px}
+.ds-voie{display:inline-block;font-size:11.5px;font-weight:900;background:#1f5f99;color:#fff;border-radius:6px;padding:1px 6px;vertical-align:2px}
+.ds-calc{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
+.ds-prep{display:block;font-size:12.5px;margin-top:4px;padding-top:4px;border-top:1px dashed var(--line)}
+.ds-prep small{color:var(--muted)}
+.ds-alerte{display:block;color:#b71c1c}
+.calc-med .vic{position:static;box-shadow:none}
+.cm-l{margin:10px 0;padding-top:8px;border-top:1px solid var(--line)}
+.cm-p{display:flex;align-items:center;gap:8px;min-height:44px;text-decoration:none;color:var(--ink);font-weight:800;font-size:14px}
+.cm-p .picto{width:30px;height:30px}
+.saed-c,.saed-c dd{font-weight:500;font-size:14px;line-height:1.4}
+.saed-c dt{font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.vic-alerte{margin:2px 0 0;padding:6px 10px;border-radius:10px;background:rgba(224,123,0,.15);color:var(--ink);font-size:13.5px;font-weight:700}
+/* ordinateur : on choisit oui ou non, l'autre branche s'efface */
+.logi .lg-br{transition:opacity .2s}
+.logi .lg-br.ecartee{opacity:.35}
+.logi .lg-br.choisie>.lg-lab{box-shadow:0 0 0 3px currentColor}
+.logi .lg-br.oui.choisie>.lg-lab{background:#2e7d32;color:#fff}
+.logi .lg-br.non.choisie>.lg-lab{background:#b71c1c;color:#fff}
+/* grand écran : logigramme et panneau d'infos côte à côte */
+.lg-cote{display:none}
+@media (min-width:1100px){
+  main#app:has(.logi){max-width:1240px}
+  .logi{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:24px;align-items:start}
+  .logi>.notes-logi{grid-column:1/-1}
+  .lg-cote{display:block;position:sticky;top:130px;max-height:calc(100vh - 220px);overflow:auto;padding:12px 14px;border:1px solid var(--line);border-left:4px solid var(--red);border-radius:12px;background:var(--panel);font-size:14px}
+  .lg-cote .lc-t{margin:0 0 6px;font-weight:900;font-size:15px}
+  .lg-cote .lc-vide{margin:0;color:var(--muted)}
+  .lg-plus-ex{display:inline-block;width:18px;height:18px;border-radius:50%;border:1.5px solid currentColor;font:italic 800 12px/15px Georgia,serif;text-align:center}
+  .logi .lg-n.fixe{box-shadow:0 0 0 3px var(--red)}
+  .logi .lg-info{display:none!important}
+}
+/* protocole associé déplié dans le logigramme */
+details.lg-imb{margin:8px 0 0;border:2px dashed var(--muted);border-radius:14px;padding:0 8px;background:var(--bg);text-align:left}
+details.lg-imb>summary{min-height:44px;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:900;cursor:pointer;list-style:none}
+details.lg-imb>summary::-webkit-details-marker{display:none}
+details.lg-imb>summary .picto{width:28px;height:28px}
+details.lg-imb[open]{padding-bottom:10px}
+details.lg-imb .logi{display:block}
+details.lg-imb .lg-cote{display:none!important}
+.vic.a-saisir{border-color:var(--red);box-shadow:0 0 0 3px rgba(168,25,26,.15)}
+.vic-q{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:4px}
+.vic-q b{flex:1 0 100%;font-size:15px}
+.vic-qb{flex:1 1 0;min-height:48px;font-weight:900}
+.vic-qb.e{border-color:#1f5f99;color:#1f5f99}
+.t-resume h3{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--red);margin:12px 0 4px}
+.t-resume ul{margin:0;padding-left:20px}
+.t-resume li{margin:3px 0;font-size:15px}
