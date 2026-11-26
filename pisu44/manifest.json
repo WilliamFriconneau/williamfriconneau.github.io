@@ -1,6 +1,11 @@
 {
- "version": "dfa0b60617c64fa1",
+ "version": "096e80d2a72b5c35",
  "files": [
+  {
+   "path": "app.webmanifest",
+   "sha256": "b1f7c9ab0458d499b7095795d1c1ab83736101b503b35adfa5494abfd40bef96",
+   "size": 586
+  },
   {
    "path": "data/boucles.js",
    "sha256": "1a31743da0a1f57f5f92c350d52b380ff765d8680df4521bf1cf9da9e62d2a81",
@@ -25,6 +30,21 @@
    "path": "data/pages.js",
    "sha256": "7e5cb500e6a6853ee79eb948d05e9d400aaed2850999591f28880bf841baf45a",
    "size": 330827
+  },
+  {
+   "path": "icones/icone-180.png",
+   "sha256": "0052167788c6450934bc558f158a0d47ae86ab2207eff5e0623546e842621558",
+   "size": 3002
+  },
+  {
+   "path": "icones/icone-192.png",
+   "sha256": "ab456787c3206165d86682675f03379898e644cd8b1da5b4fe7e32cae4226976",
+   "size": 3146
+  },
+  {
+   "path": "icones/icone-512.png",
+   "sha256": "549ca5196126662d6707bc351372ad9c044197c3106c880b223a97ea4b83926f",
+   "size": 9145
   },
   {
    "path": "images/icones/actes-secouristes.png",
@@ -158,23 +178,28 @@
   },
   {
    "path": "index.html",
-   "sha256": "8334bfbe56ff4398ba8830defe814f5a006e577089ee2b07c2724748c5b212b5",
-   "size": 1449
+   "sha256": "792213bcb1701dd5dd21fb33821e3931ccd2ae9e73f75abf717a8f4ae92e06e4",
+   "size": 1623
   },
   {
    "path": "poche.css",
-   "sha256": "274ab603c40ee68dbd3de6265782dac9da841bfd0af5f44fdf3429901a2f1af8",
-   "size": 7898
+   "sha256": "2c010e22a660da84c58e0b0fe55d74ae28115e8d51f020a395ec387216742915",
+   "size": 8397
   },
   {
    "path": "poche.js",
-   "sha256": "71d79dee0a4965f13fc781a515f91785a8dea39f093aa507f676134695e5035b",
-   "size": 26519
+   "sha256": "f7f3aa1b23d260313fc790da453da8ef56352088fd8e1d2abf0b91bed9d69ff0",
+   "size": 29669
   },
   {
    "path": "style.css",
    "sha256": "b86f7825935aadc11d88279391f8e9fc30e3ee8342d649b4c6f858c39ceed71b",
    "size": 62922
+  },
+  {
+   "path": "sw.js",
+   "sha256": "ad2c422952ae273f1213ab45538045601c6321576cb47bec54d58a25d0ddfda4",
+   "size": 3554
   },
   {
    "path": "videos/M1-1.mp4",

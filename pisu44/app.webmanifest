@@ -1,0 +1,16 @@
+{
+  "name": "PISU 44",
+  "short_name": "PISU 44",
+  "description": "Protocoles infirmiers de soins d'urgence du SDIS 44, en format poche, lisibles sans réseau.",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#16181d",
+  "theme_color": "#a8191a",
+  "icons": [
+    { "src": "icones/icone-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icones/icone-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icones/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

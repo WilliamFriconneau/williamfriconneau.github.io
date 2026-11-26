@@ -216,6 +216,8 @@
     const p = P[c];
     return `<a class="ligne" href="#/p/${c}"><span class="code ${classeCode(c)}">${c}</span><span>${esc(p.titre)}</span>${errataPour(c).inc.length ? `<span class="pr-n" title="points à confirmer">${errataPour(c).inc.length}</span>` : ""}</a>`;
   }
+  // dans les apps PISU 44 (vue web Android « ; wv) », vue web iOS sans « Safari ») : pas de proposition d’installation
+  const dansLApp = () => { const u = navigator.userAgent; return /; wv\)/.test(u) || (/iPhone|iPad/.test(u) && !/Safari\//.test(u)); };
   const ACCUEIL = [
     { id: "adultes", titre: "Adultes", rendre: z => z.innerHTML = `<section class="bloc"><h2>Adulte et enfant ≥ 15 ans</h2>${[1,2,3,4,5,6,7,8,9].filter(i => P[i + "A"]).map(i => lienCode(i + "A")).join("")}</section>` },
     { id: "enfants", titre: "Enfants", rendre: z => z.innerHTML = `<section class="bloc"><h2>Enfant &lt; 15 ans</h2>${[1,2,3,4,5,6,7,8,9].filter(i => P[i + "E"]).map(i => lienCode(i + "E")).join("")}</section>` },
@@ -224,6 +226,7 @@
       z.innerHTML = `<section class="bloc"><h2>Actes de télémédecine</h2>${PROTO_AT.filter(c => P[c]).map(lienCode).join("")}</section>`
         + `<section class="bloc"><h2>Soutien sanitaire opérationnel</h2>${PROTO_SSO.filter(c => P[c]).map(lienCode).join("")}</section>`
         + `<section class="bloc"><h2>Médicaments</h2>${Object.values(M).map(m => `<a class="ligne" href="#/med/${m.code}"><span class="code med">${m.code}</span><span>${esc(m.dci)} <small>${esc(m.spe)}</small></span></a>`).join("")}</section>`
+        + (dansLApp() ? "" : `<section class="bloc"><h2>Sur l'écran d'accueil</h2><p class="petit">Le carnet s'installe comme une application, sans store, et marche sans réseau : tout est téléchargé à la première ouverture, puis mis à jour dès que le réseau est là. iPhone : Safari, bouton Partager, « Sur l'écran d'accueil ». Android : Chrome, menu ⋮, « Installer l'application ».</p><button class="ligne b-inst" type="button" hidden><span>Installer PISU 44 sur cet appareil</span></button></section>`)
         + `<section class="bloc"><h2>Généralités et annexes</h2>${gens.map(c => `<a class="ligne" href="#/p/${c}"><span>${esc(P[c].titre)}</span></a>`).join("")}<a class="ligne" href="#/confirmer"><span>Points à confirmer sans protocole précis</span></a></section>`;
     } },
   ];
@@ -234,6 +237,8 @@
     const actif = ACCUEIL.find(a => a.id === id) || ACCUEIL[0];
     try { localStorage.setItem("pisu44-accueil", actif.id); } catch (e) {}
     onglets(ACCUEIL, actif, "#");
+    const bi = $(".b-inst", app);
+    if (bi && installer) { bi.hidden = false; bi.onclick = async () => { installer.prompt(); await installer.userChoice; installer = null; bi.hidden = true; }; }
     app.lastChild.classList.add("accueil");
   }
   function pageProto(code, partie, cible) {
@@ -371,5 +376,37 @@
     v.addEventListener("animationend", () => v.remove());
   }
   window.addEventListener("hashchange", () => { route(); transition(); });
+  // ------------------------------------------------------------- hors ligne (PWA) : tout le site en cache, mis à jour en ligne
+  const hl = h("div", { class: "hl", role: "status" });
+  document.body.appendChild(hl);
+  const dire = (txt, bouton) => { hl.innerHTML = txt; hl.hidden = !txt; if (bouton) hl.appendChild(bouton); };
+  let installer = null;
+  window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installer = e; });
+  // le manifeste d'installation seulement sur le web (en fichier local, Chrome le refuse et le signale en erreur)
+  if (/^https?:$/.test(location.protocol) && !dansLApp()) document.head.appendChild(h("link", { rel: "manifest", href: "app.webmanifest" }));
+  if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost") && !dansLApp()) {
+    let majPrete = false, telecharge = false;
+    const verifier = () => navigator.serviceWorker.ready.then(r => { if (navigator.onLine && r.active) r.active.postMessage("verifier"); });
+    navigator.serviceWorker.register("sw.js").then(verifier);
+    // à chaque retour du réseau et à chaque retour sur l'app
+    window.addEventListener("online", verifier);
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") verifier(); });
+    navigator.serviceWorker.addEventListener("message", e => {
+      const d = e.data || {};
+      if (majPrete) return;   // la proposition de recharger reste affichée
+      if (d.type === "progres") { telecharge = true; dire(`Téléchargement pour le hors ligne : ${d.fait} / ${d.total}`); }
+      else if (d.type === "etat" && d.nouveau) {
+        majPrete = true;
+        const b = h("button", { class: "b", type: "button" }, "Recharger");
+        b.onclick = () => location.reload();
+        dire("Nouvelle version du carnet téléchargée. ", b);
+      } else if (d.type === "etat" && telecharge) {
+        telecharge = false;
+        dire("Carnet disponible hors ligne.");
+        setTimeout(() => { if (!majPrete) dire(""); }, 2500);
+      } else if (d.type === "erreur" && telecharge) { telecharge = false; dire(""); }
+    });
+  } else dire("");
+
   route();
 })();
