@@ -67,7 +67,18 @@
     const enf = /E$/.test(code);
     return vs.find(v => enf === /enfant/i.test(v.nom) && !(enf && /adulte/i.test(v.nom))) || vs[0];
   }
-  const videoHtml = v => `<figure class="prep"><img src="${v.f}" alt="Préparation animée : ${esc(v.nom)}" loading="lazy" decoding="async"><figcaption>${esc(v.nom)}</figcaption></figure>`;
+  const videoHtml = v => `<figure class="prep"><img src="${v.f}" alt="Préparation animée : ${esc(v.nom)}" loading="lazy" decoding="async"><figcaption>${esc(v.nom)} · <span class="prep-z">toucher pour agrandir</span></figcaption></figure>`;
+  // préparation en grand : plein écran, repart du début, on peut zoomer avec deux doigts ; un toucher ferme
+  document.addEventListener("click", e => {
+    const im = e.target.closest?.(".prep img"); if (!im) return;
+    e.preventDefault(); e.stopPropagation();
+    const z = document.createElement("div"); z.className = "prep-grand"; z.setAttribute("role", "dialog"); z.setAttribute("aria-label", im.alt);
+    z.innerHTML = `<img src="${im.getAttribute("src")}" alt="${esc(im.alt)}"><p>${esc(im.alt.replace(/^Préparation animée : /, ""))} · toucher pour fermer</p>`;
+    const fermer = () => { z.remove(); document.removeEventListener("keydown", esc_); };
+    const esc_ = ev => { if (ev.key === "Escape") fermer(); };
+    z.addEventListener("click", fermer); document.addEventListener("keydown", esc_);
+    document.body.appendChild(z);
+  }, true);
   const VIDES = new Set("avec dans pour sans plus moins puis entre selon apres avant chez etre faire fait cette celui elle sont tout tous toute toutes adulte enfant mmhg mg/kg victime".split(" "));
   const mots = s => new Set((s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").match(/[a-z0-9]{4,}/g)?.filter(w => !VIDES.has(w)) || []);
   const BLOCS = {};
@@ -134,6 +145,39 @@
     }
     return suite(L.start, new Set());
   }
+  // colonnes à glisser : l'onglet suit la colonne à l'écran, la hauteur suit la colonne affichée
+  function carrousel(choix, ong, sp) {
+    const cols = () => [...sp.children];
+    let act = 0;
+    const etroit = () => getComputedStyle(sp).overflowX === "auto";
+    const hauteur = () => { if (!etroit()) { sp.style.height = ""; return; } const c = cols()[act]; if (c) sp.style.height = c.scrollHeight + "px"; };
+    const activer = i => {
+      if (i === act && sp.style.height) return;
+      act = i;
+      [...ong.children].forEach((b, k) => b.setAttribute("aria-selected", String(k === i)));
+      cols().forEach((c, k) => c.classList.toggle("vue", k === i));
+      hauteur();
+    };
+    ong.addEventListener("click", e => {
+      const b = e.target.closest(".lg-og"); if (!b) return;
+      const i = +b.dataset.i; activer(i);
+      sp.scrollTo({ left: cols()[i].offsetLeft - sp.offsetLeft - parseFloat(getComputedStyle(sp).paddingLeft || 0), behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    });
+    let t;
+    sp.addEventListener("scroll", () => { clearTimeout(t); t = setTimeout(() => {
+      const x = sp.scrollLeft + sp.clientWidth / 2; let best = 0, d = Infinity;
+      cols().forEach((c, k) => { const m = c.offsetLeft - sp.offsetLeft + c.offsetWidth / 2, dd = Math.abs(m - x); if (dd < d) { d = dd; best = k; } });
+      activer(best); choix.classList.add("vu");
+    }, 60); }, { passive: true });
+    if ("ResizeObserver" in window) { const ro = new ResizeObserver(() => hauteur()); cols().forEach(c => ro.observe(c)); ro.observe(sp); }
+    cols()[0]?.classList.add("vue");
+    requestAnimationFrame(() => {
+      hauteur();
+      // les onglets restent visibles sous la barre et les onglets de la page
+      const sg = document.querySelector(".seg");
+      if (sg) document.documentElement.style.setProperty("--colle", Math.round((parseFloat(getComputedStyle(sg).top) || 0) + sg.getBoundingClientRect().height) + "px");
+    });
+  }
   function logigramme(code, L) {
     const byId = Object.fromEntries(L.nodes.map(n => [n.id, n]));
     const bou = BOU[code] || {};
@@ -160,16 +204,26 @@
         } else {
           parent.appendChild(h("div", { class: "lg-fl" }));
           const sp = h("div", { class: "lg-split" });
-          it.branches.forEach(br => {
-            const lab = br.e.label || (it.branches.length > 1 ? "en même temps" : "");
-            const col = h("div", { class: "lg-br " + (/^OUI/i.test(lab) ? "oui" : /^NON/i.test(lab) ? "non" : "par") });
+          const plusieurs = it.branches.length > 1;
+          // sur téléphone, une branche par colonne : on glisse de l'une à l'autre, les onglets disent laquelle est à l'écran
+          const choix = h("div", { class: "lg-choix" + (plusieurs ? " multi" : "") });
+          const ong = plusieurs ? h("div", { class: "lg-onglets", role: "tablist" }) : null;
+          it.branches.forEach((br, bi) => {
+            const lab = br.e.label || (plusieurs ? "en même temps" : "");
+            const sens = /^OUI/i.test(lab) ? "oui" : /^NON/i.test(lab) ? "non" : "par";
+            const col = h("div", { class: "lg-br " + sens });
+            if (ong) ong.appendChild(h("button", { type: "button", class: "lg-og " + sens, role: "tab", "aria-selected": String(bi === 0), "data-i": String(bi) },
+              `<span class="og-tx">${esc(lab)}</span>`));
             col.appendChild(h("div", { class: "lg-lab" }, esc(lab) + (br.e.ecart ? ecartHtml(br.e.ecart) : "")));
             dessiner(br.items, col);
             if (!br.items.length) col.appendChild(h("div", { class: "lg-vide" }, "↓ rejoint la suite"));
             col.style.flex = `${poids(br.items)} 1 0`;
             sp.appendChild(col);
           });
-          parent.appendChild(sp);
+          if (ong) { choix.appendChild(ong); choix.appendChild(h("div", { class: "lg-glisse", "aria-hidden": "true" }, `‹ glisser pour voir les ${it.branches.length} choix ›`)); }
+          choix.appendChild(sp);
+          parent.appendChild(choix);
+          if (ong) carrousel(choix, ong, sp);
         }
       });
     }
@@ -285,7 +339,14 @@
     const actif = liste.find(x => x.id === partie) || liste[0];
     if (liste.length > 1) onglets(liste, actif, `#/p/${code}`);
     else { const z = h("div", { class: "contenu" }); actif.rendre(z); app.appendChild(z); }
-    if (cible) { const q = document.getElementById("n-" + cible); if (q) { q.scrollIntoView({ block: "center" }); q.classList.add("vise"); } }
+    if (cible) { const q = document.getElementById("n-" + cible); if (q) {
+      // le nœud visé peut être dans une colonne cachée : on ouvre les bons onglets, du plus profond au plus haut
+      for (let c = q.closest(".lg-br"); c; c = c.parentElement.closest(".lg-br")) {
+        const og = c.closest(".lg-choix")?.querySelector(":scope > .lg-onglets"); const i = [...c.parentElement.children].indexOf(c);
+        if (og && og.children[i]) og.children[i].click();
+      }
+      q.scrollIntoView({ block: "center" }); q.classList.add("vise");
+    } }
   }
   function figureMed(code) {
     const im = IMG[code]; if (!im) return null;
