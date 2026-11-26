@@ -58,7 +58,8 @@ window.PISU_MEMOS = {
       "date": "27/10/2025",
       "editeur": "Resuscitation Council UK"
      }
-    ]
+    ],
+    "pisu": "Adrénaline toutes les 2 analyses (4 min), p.19-20."
    }
   ],
   "1E": [
@@ -144,7 +145,8 @@ window.PISU_MEMOS = {
       "date": "juin 2018",
       "editeur": "SFMU, SRLF, GFRUP"
      }
-    ]
+    ],
+    "pisu": "O2 au masque haute concentration 15 l/min pour une saturation > 94 %, p.22."
    }
   ],
   "2E": [
@@ -183,7 +185,8 @@ window.PISU_MEMOS = {
       "date": "juin 2018",
       "editeur": "SFMU, SRLF, GFRUP"
      }
-    ]
+    ],
+    "pisu": "O2 au masque haute concentration 15 l/min pour une saturation > 94 %, 2E."
    }
   ],
   "3A": [
@@ -484,7 +487,8 @@ window.PISU_MEMOS = {
       "date": "validé mai 2019, publié 2020",
       "editeur": "SFAR, SFB, SFMU, ADARPEF — ACCPM 39:253-267"
      }
-    ]
+    ],
+    "pisu": "Inclusion : brûlure du 2e ou 3e degré > 15 % de la surface corporelle, p.38."
    },
    {
     "titre": "Surface brûlée et refroidissement",
@@ -505,7 +509,8 @@ window.PISU_MEMOS = {
       "date": "validé mai 2019, publié 2020",
       "editeur": "SFAR, SFB, SFMU, ADARPEF — ACCPM 39:253-267"
      }
-    ]
+    ],
+    "pisu": "Eau ruisselante à 15°, 15 min, à 15 cm, sans condition de surface ; règle de Wallace, p.40."
    }
   ],
   "6E": [
@@ -529,7 +534,8 @@ window.PISU_MEMOS = {
       "date": "validé mai 2019, publié 2020",
       "editeur": "SFAR, SFB, SFMU, ADARPEF — ACCPM 39:253-267"
      }
-    ]
+    ],
+    "pisu": "Inclusion : > 6 ans > 15 % ; 1 à 6 ans > 10 % ; < 1 an > 5 %, p.76."
    },
    {
     "titre": "Surface brûlée et refroidissement (enfant)",
@@ -548,7 +554,8 @@ window.PISU_MEMOS = {
       "date": "validé mai 2019, publié 2020",
       "editeur": "SFAR, SFB, SFMU, ADARPEF — ACCPM 39:253-267"
      }
-    ]
+    ],
+    "pisu": "Refroidir à l'eau à 15°, 15 min, à 15 cm, si pas encore fait, p.78."
    }
   ],
   "7A": [
@@ -610,7 +617,8 @@ window.PISU_MEMOS = {
       "date": "validé mai 2019, publié 2020",
       "editeur": "SFAR, SFB, SFMU, ADARPEF — ACCPM 39:253-267"
      }
-    ]
+    ],
+    "pisu": "Hydroxocobalamine si ACR, ou si PAS < valeur pour l'âge et/ou réaction uniquement à la douleur, p.82."
    },
    {
     "titre": "Inhalation de fumées : y penser",
@@ -685,7 +693,8 @@ window.PISU_MEMOS = {
       "date": "2012",
       "editeur": "Pain"
      }
-    ]
+    ],
+    "pisu": "EN ou échelle des visages dès 3 ans, seuil ≥ 4, p.84."
    }
   ],
   "9A": [
@@ -716,7 +725,7 @@ window.PISU_MEMOS = {
      "Glucose ou saccharose plutôt que jus",
      "Recontrôler la glycémie à 15 min",
      "Toujours basse : redonner 15 g",
-     "Ne s'applique pas à l'enfant"
+     "Source adulte"
     ],
     "sources": [
      {
@@ -726,7 +735,8 @@ window.PISU_MEMOS = {
       "date": "2018",
       "editeur": "Diabetes Canada — Can J Diabetes"
      }
-    ]
+    ],
+    "pisu": "Le PISU 9E resucre aussi l'enfant : 15 g de sucres rapides + sucres lents."
    }
   ],
   "9E": [
@@ -767,7 +777,8 @@ window.PISU_MEMOS = {
       "date": "2022",
       "editeur": "ISPAD — Pediatric Diabetes"
      }
-    ]
+    ],
+    "pisu": "15 g de sucres rapides + sucres lents, p.89-90."
    }
   ],
   "1AT": [
@@ -864,7 +875,8 @@ window.PISU_MEMOS = {
       "date": "décembre 2013",
       "editeur": "ARS Pays de la Loire, groupe régional"
      }
-    ]
+    ],
+    "pisu": "Ceftriaxone et remplissage à la demande du MRU, après le bilan au 15, p.95."
    }
   ],
   "1SSO": [],
@@ -889,7 +901,8 @@ window.PISU_MEMOS = {
       "date": "2023",
       "editeur": "Comité international olympique — BJSM"
      }
-    ]
+    ],
+    "pisu": "Seuil ≥ 40 °C ; refroidir les axes vasculaires ; VVP NaCl 0,9 %, logigramme 3SSO."
    }
   ],
   "4SSO": [
@@ -917,7 +930,8 @@ window.PISU_MEMOS = {
       "date": "2021",
       "editeur": "World Journal of Emergency Medicine"
      }
-    ]
+    ],
+    "pisu": "Évacuation en position fœtale ou repositionnement progressif (10°/10°), p.104."
    }
   ],
   "5SSO": [
@@ -1056,7 +1070,8 @@ window.PISU_MEMOS = {
       "Aucune"
      ]
     ]
-   }
+   },
+   "pisu": "Le carnet (p.15) garde l'ancienne formulation (« à la douleur ») ; la cotation est la même."
   },
   {
    "id": "constantes-enfant",
@@ -1112,7 +1127,8 @@ window.PISU_MEMOS = {
       "80"
      ]
     ]
-   }
+   },
+   "pisu": "Le carnet (annexe p.16) donne d'autres fourchettes ; ce sont elles qui servent aux critères des PISU."
   },
   {
    "id": "opqrst",

@@ -1,5 +1,5 @@
 {
- "version": "efd17a24e66850bb",
+ "version": "99d4137014e89274",
  "files": [
   {
    "path": "app.webmanifest",
@@ -13,18 +13,18 @@
   },
   {
    "path": "data/competences.js",
-   "sha256": "9042f6c5a39db5d09de43745f2ad5f1bee77920eb7ad68b6239b2b2a3813b875",
-   "size": 67411
+   "sha256": "510cc007ad04f7d9e9286b6fe42882efeb1e9bb9c6ffb70dd6964040948f0c23",
+   "size": 59686
   },
   {
    "path": "data/doses.js",
-   "sha256": "eb992b952a372dd0b88f479e5c5e1f9b54e5b2cea77cbbe20a7d29d71b5ef459",
-   "size": 12904
+   "sha256": "33af980025ae7e914015fca0dd71639c2c60bdf450ba914614ad31ff7b243183",
+   "size": 12965
   },
   {
    "path": "data/errata.js",
-   "sha256": "2c9915c5e7d9247eed50a0b4bd341906a95913cee67fdeb2581f2530aa1350ed",
-   "size": 13427
+   "sha256": "a1f2d8cd8dfc72a4866d3c6710bf183aec72c7d372686ae7fe1b526e1c74d95e",
+   "size": 14371
   },
   {
    "path": "data/images.js",
@@ -38,18 +38,18 @@
   },
   {
    "path": "data/memos.js",
-   "sha256": "fdf6614fea19235c9e1173572541957b0e839cde55b949afa048e1579442f26f",
-   "size": 39457
+   "sha256": "08a7eca4866b3001dbb7e0ef0805b37c9f45962a55959f8dc43a0bcc5f0e9ea2",
+   "size": 40928
   },
   {
    "path": "data/pages.js",
-   "sha256": "7e5cb500e6a6853ee79eb948d05e9d400aaed2850999591f28880bf841baf45a",
-   "size": 330827
+   "sha256": "4c53e84d955c3b72805fbe006207ea624993c9b55fe7895075329c6a82675609",
+   "size": 332528
   },
   {
    "path": "data/trauma.js",
-   "sha256": "78fd7f3ad82a35ead22af9044e3cc6dd7e58d882e775581c1a4f236feb419dae",
-   "size": 8708
+   "sha256": "60026741e18f6c67da0150588247a18ac20d58d6ae8358a8ae69d45151634abe",
+   "size": 10429
   },
   {
    "path": "icones/icone-180.png",
@@ -65,6 +65,31 @@
    "path": "icones/icone-512.png",
    "sha256": "549ca5196126662d6707bc351372ad9c044197c3106c880b223a97ea4b83926f",
    "size": 9145
+  },
+  {
+   "path": "images/carnet/echelle-visages.jpg",
+   "sha256": "ea6d2c2f8e493142dadd0fd4010613c61b9c909355081c5efcb79277996f0174",
+   "size": 10465
+  },
+  {
+   "path": "images/carnet/legende-logigrammes.jpg",
+   "sha256": "4eb73076eadf5a604bddba0b5e6cde61cd1fe4e3424d9e8d933afcb95c13213d",
+   "size": 41621
+  },
+  {
+   "path": "images/carnet/lund-browder.jpg",
+   "sha256": "349cef7ca8361124e00c850e37dc2bd4460ced5122dab3b3b5d072920048b904",
+   "size": 31097
+  },
+  {
+   "path": "images/carnet/purpura.jpg",
+   "sha256": "3a7f9bb972debf6be21bd6e14b799a74ecbce4cf1c3aa4f4d7fc16c51bc21aa6",
+   "size": 16750
+  },
+  {
+   "path": "images/carnet/wallace.jpg",
+   "sha256": "5caaf99736f3d44f33c129f088bedc481c240fc3cccd56d6fb4af30cc082de85",
+   "size": 28837
   },
   {
    "path": "images/icones/actes-secouristes.png",
@@ -203,13 +228,13 @@
   },
   {
    "path": "poche.css",
-   "sha256": "5baaeb2a89c007bcc279584d3884a35c62e094b26423d993110982c6292b32b2",
-   "size": 42297
+   "sha256": "69a9a183b7d7ee9e89485ef7a3229d08d310c076a515140f6450191a7009bd91",
+   "size": 42716
   },
   {
    "path": "poche.js",
-   "sha256": "00e08fe1c8755fc34841635e2c3f392fcb27490140dd7b8bda3fa9e37feba60e",
-   "size": 129835
+   "sha256": "b555ffc3eb033234f8c62ba3616fb20cf49d7517d01fa411124e5ef4ffff3d01",
+   "size": 133527
   },
   {
    "path": "preparations/M1-1.gif",

@@ -189,12 +189,16 @@
   const vic = INT.vic;
   const sauverInt = () => { INT.maj = Date.now(); try { localStorage.setItem(INT_CLE, JSON.stringify(INT)); } catch (e) {} majBandeauInt(); };
   const enCours = () => !!(INT.debut || INT.evts.length || vic.poids != null || vic.age != null);
+  const majApresVic = () => { document.querySelectorAll("[data-dose]").forEach(majDose); document.querySelectorAll(".lg-info:not([hidden]) .saed, .lg-cote .saed").forEach(majSaed); majPerf(); majCrit(); majBarre(); document.querySelectorAll("[data-tl]").forEach(majTL); };
+  // au-delà de 6 h sans activité, l'intervention est périmée, même si l'app est restée ouverte en arrière-plan
+  const perimee = () => { if (enCours() && INT.maj && Date.now() - INT.maj > DUREE_MAX) { nouvelleIntervention(); return true; } return false; };
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && perimee()) route(); });
   const garderVic = () => { if (!INT.debut) INT.debut = Date.now(); sauverInt(); document.querySelectorAll("[data-dose]").forEach(majDose); document.querySelectorAll(".lg-info:not([hidden]) .saed, .lg-cote .saed").forEach(majSaed); majPerf(); majCrit(); majBarre(); document.querySelectorAll("[data-tl]").forEach(majTL); };
   const majPerf = () => document.querySelectorAll("[data-perf]").forEach(el => { const L = P[el.closest("[data-code]")?.dataset.code]?.logi; const n = L && L.nodes.find(x => x.id === el.dataset.perf); if (n) el.innerHTML = perfusions(n); });
   const heure = t => new Date(t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
   const evtsDe = (code, id, j) => INT.evts.filter(e => e.code === code && e.id === id && (j == null || e.j === j));
   function noter(code, id, j, txt) { if (!INT.debut) INT.debut = Date.now(); INT.evts.push({ t: Date.now(), code, id, j, txt }); sauverInt(); }
-  function nouvelleIntervention() { Object.keys(vic).forEach(k => delete vic[k]); INT.evts = []; INT.debut = null; INT.ou = null; try { localStorage.removeItem(INT_CLE); } catch (e) {} majBandeauInt(); }
+  function nouvelleIntervention() { Object.keys(vic).forEach(k => delete vic[k]); INT.evts = []; INT.debut = null; INT.ou = null; INT.retires = []; try { localStorage.removeItem(INT_CLE); } catch (e) {} majBandeauInt(); }
   // intervalle de répétition du PISU (« toutes les 4 min ») pour ce nœud, en millisecondes
   const intervalle = (code, id) => { const b = (BOU[code] || {})[id]; const m = b && /(\d+)\s*min/.exec(b.rythme); return m ? +m[1] * 60e3 : null; };
   const nb = x => (Math.round(x * 100) / 100).toString().replace(".", ",");
@@ -243,13 +247,22 @@
     const termes = [...t.matchAll(/(≥|≤|<|>)\s*(\d+(?:[.,]\d+)?)\s*(kg|ans?)/g)];
     if (!termes.length) return null;
     const val = termes.map(([, op, n, u]) => { const v = /kg/.test(u) ? vic.poids : vic.age; if (v == null) return null; n = +n.replace(",", "."); return op === "≥" ? v >= n : op === "≤" ? v <= n : op === "<" ? v < n : v > n; });
-    if (val.includes(null)) return null;
-    return / ou /.test(t) ? val.some(Boolean) : val.every(Boolean);
+    if (/ ou /.test(t)) return val.includes(true) ? true : val.includes(null) ? null : false;
+    return val.includes(false) ? false : val.includes(null) ? null : true;
   }
   // dose d'une injection du PISU pour cette victime : dose, volume, voie, calcul détaillé, préparation (ampoules, solvant)
   const PREPS = window.PISU_PREP || {};
+  // âge minimal écrit dans le titre (« ≥ 3 ans et < 15 ans ») ; conditions d'une injection écrites dans le logigramme
+  const ageMin = code => { const m = /≥\s*(\d+)\s*ans?/.exec(P[code]?.titre || ""); return m ? +m[1] : null; };
+  const SI = { "1E": { M4: "> 3 ans" } };   // 1E p.57-58 : « Si > 3 ans 5 mg/kg d'amiodarone »
+  const VOIE_NOEUD = { "5A": { M8: ["IVD", "le logigramme 5A dit IVD, la fiche M8 dit IVL"] } };
+  const fmt = x => x < 10 ? +x.toPrecision(3) : r2(x);
+  const nbf = x => String(fmt(x)).replace(".", ",");   // 3 chiffres significatifs sous 10 : 0,025 mg reste 0,025 mg
   const r2 = x => Math.round(x * 100) / 100;
-  function calculDose(inj) {
+  function calculDose(inj, code) {
+    const am = code && ageMin(code), si = code && SI[code]?.[inj.m];
+    if (am != null && vic.age != null && vic.age < am) return { hors: `Protocole à partir de ${am} an${am > 1 ? "s" : ""} (${code}) : pas de dose calculée à ${nb(vic.age)} an${vic.age > 1 ? "s" : ""}.`, m: inj.m };
+    if (si && critere(si + ":") === false) return { hors: `Le PISU ${code} dit « Si ${si} » : pas de ${(PREPS[inj.m]?.[inj.v]?.prod?.nom || inj.m).toLowerCase()} à ${nb(vic.age)} an${vic.age > 1 ? "s" : ""}.`, m: inj.m };
     let opt = inj, choix = "";
     if (inj.choix) {
       const i = inj.choix.map(c => critere(c.lab)).indexOf(true);
@@ -257,26 +270,28 @@
       opt = Object.assign({ m: inj.m }, inj.choix[i]); choix = inj.choix[i].lab.split(":")[0].trim();
     }
     const pv = (PREPS[opt.m] || [])[opt.v] || {}, pr = pv.prod;
-    const u = pr ? pr.u : "mg", voie = inj.voie || (pr && pr.voie) || "";
-    const r = { m: opt.m, v: opt.v, pv, pr, u, voie, choix, calc: [], dose: null, ml: null, plafond: false };
+    const vn = code && VOIE_NOEUD[code]?.[opt.m];
+    const u = pr ? pr.u : "mg", voie = (vn && vn[0]) || inj.voie || (pr && pr.voie) || "";
+    const r = { m: opt.m, v: opt.v, pv, pr, u, voie, choix, calc: [], dose: null, ml: null, plafond: false, note: vn ? `Voie : ${vn[1]} (incohérence du carnet).` : "" };
+    if (si) r.calc.push(`condition du PISU : si ${si}${vic.age == null ? " (âge ?)" : ""}`);
     if (opt.mg != null) { r.dose = opt.mg; r.calc.push(`Dose fixe du PISU : ${nb(opt.mg)} ${u}`); }
     else if (opt.mgkg != null) {
       r.regle = `${nb(opt.mgkg)} ${u}/kg${opt.max != null ? `, max ${nb(opt.max)} ${u}` : ""}`;
       if (vic.poids == null) return Object.assign(r, { manque: "poids" });
       const brut = opt.mgkg * vic.poids;
-      r.calc.push(`${nb(vic.poids)} kg × ${nb(opt.mgkg)} ${u}/kg = ${nb(r2(brut))} ${u}`);
+      r.calc.push(`${nb(vic.poids)} kg × ${nb(opt.mgkg)} ${u}/kg = ${nbf((brut))} ${u}`);
       if (opt.max != null && brut > opt.max) { r.plafond = true; r.calc.push(`plafonné au maximum du PISU : ${nb(opt.max)} ${u}`); }
       r.dose = Math.min(brut, opt.max ?? Infinity);
     } else if (opt.mlkg != null) {
       r.regle = `${nb(opt.mlkg)} ml/kg${opt.maxml != null ? `, max ${nb(opt.maxml)} ml` : ""}`;
       if (vic.poids == null) return Object.assign(r, { manque: "poids" });
       const brut = opt.mlkg * vic.poids;
-      r.calc.push(`${nb(vic.poids)} kg × ${nb(opt.mlkg)} ml/kg = ${nb(r2(brut))} ml`);
+      r.calc.push(`${nb(vic.poids)} kg × ${nb(opt.mlkg)} ml/kg = ${nbf((brut))} ml`);
       if (opt.maxml != null && brut > opt.maxml) { r.plafond = true; r.calc.push(`plafonné au maximum du PISU : ${nb(opt.maxml)} ml`); }
       r.ml = Math.min(brut, opt.maxml ?? Infinity);
-      if (pr) { r.dose = r.ml * pr.conc; r.calc.push(`${nb(r2(r.ml))} ml × ${nb(pr.conc)} ${u}/ml = ${nb(r2(r.dose))} ${u}`); }
+      if (pr) { r.dose = r.ml * pr.conc; r.calc.push(`${nbf((r.ml))} ml × ${nb(pr.conc)} ${u}/ml = ${nbf((r.dose))} ${u}`); }
     }
-    if (r.ml == null && r.dose != null && pr) { r.ml = r.dose / pr.conc; r.calc.push(`${nb(r2(r.dose))} ${u} ÷ ${nb(pr.conc)} ${u}/ml = ${nb(r2(r.ml))} ml`); }
+    if (r.ml == null && r.dose != null && pr) { r.ml = r.dose / pr.conc; r.calc.push(`${nbf((r.dose))} ${u} ÷ ${nb(pr.conc)} ${u}/ml = ${nbf((r.ml))} ml`); }
     if (r.ml != null && pr && r.ml > pr.vol + 1e-9) r.depasse = true;
     return r;
   }
@@ -323,29 +338,31 @@
     }
     if (!out.length) return "";
     const deux = /2(?:e|ème|eme)\s*(?:voie|VVP|ABORD)/i.test(t);
-    const l = deux && out.length === 1 ? [Object.assign({}, out[0], { voie: "voie 1" }), Object.assign({}, out[0], { voie: "voie 2" })] : out;
-    return `<span class="perf">${l.map(x => `<span class="perf-i">${IC.poche}<span class="eq-l">${esc(x.lab)}<small>${esc(x.sol)}${x.voie ? " · " + x.voie : ""}</small>${x.deb ? `<small>${esc(x.deb)}</small>` : ""}${x.calc ? `<small class="perf-c">${esc(x.calc)}</small>` : ""}</span></span>`).join("")}</span>`;
+    const l = deux && out.length === 1 ? [Object.assign({}, out[0], { voie: "sur la 2e voie" })] : out;
+    // 2e voie : la 1re voie est dessinée en gris, sans volume, pour situer la poche ; le PISU ne passe qu'une poche
+    return `<span class="perf">${deux && out.length === 1 ? `<span class="perf-i perf-v1">${IC.poche}<span class="eq-l">voie 1<small>déjà posée</small></span></span>` : ""}${l.map(x => `<span class="perf-i">${IC.poche}<span class="eq-l">${esc(x.lab)}<small>${esc(x.sol)}${x.voie ? " · " + x.voie : ""}</small>${x.deb ? `<small>${esc(x.deb)}</small>` : ""}${x.calc ? `<small class="perf-c">${esc(x.calc)}</small>` : ""}</span></span>`).join("")}</span>`;
   }
   function prepHtml(r) {
     const pv = r.pv; if (!pv || !pv.prod) return "";
     const amp = (pv.amp || []).map(a => `${a.n} ${a.n > 1 ? "ampoules" : "ampoule"} ${esc(a.l)}`).join(" + ");
     return `${equation(pv)}<span class="ds-prep"><b>Préparer</b>${amp ? ` <small>(${amp})</small>` : ""}<ol>${(pv.prep || []).map(t => `<li>${esc(t)}</li>`).join("")}<li><b>${nb(pv.prod.vol)} ml à ${nb(pv.prod.conc)} ${esc(pv.prod.u)}/ml</b></li></ol><small>${esc(pv.src)}</small></span>`;
   }
-  function doseTexte(inj) {
-    const r = calculDose(inj);
+  function doseTexte(inj, code) {
+    const r = calculDose(inj, code);
+    if (r.hors) return { hors: true, nom: r.m, txt: `<span class="ds-hors">${esc(r.hors)}</span>`, html: "" };
     const nom = r.pr ? r.pr.nom.toLowerCase() : r.m;
     if (r.manque) return { manque: r.manque, nom, txt: r.options ? r.options.map(esc).join(" · ") : `${esc(nom)} ${esc(r.regle || "")}`, html: "" };
-    const tete = `<span class="ds-dose"><b>${nb(r2(r.dose))} ${esc(r.u)}</b>${r.ml != null ? ` = <b>${nb(r2(r.ml))} ml</b>` : ""} de ${esc(nom)}${r.voie ? ` <span class="ds-voie">${esc(r.voie)}</span>` : ""}</span>`;
-    const calc = `<span class="ds-calc"><b>Pour contrôle :</b> ${r.calc.map(esc).join(" → ")}${r.choix ? ` <small>(${esc(r.choix)})</small>` : ""}${r.depasse ? ` <b class="ds-alerte">Volume supérieur à la seringue préparée (${nb(r.pr.vol)} ml)</b>` : ""}</span>`;
-    return { dose: r2(r.dose), ml: r.ml != null ? r2(r.ml) : null, u: r.u, nom, voie: r.voie, html: tete + calc + prepHtml(r), txt: tete };
+    const tete = `<span class="ds-dose"><b>${nbf((r.dose))} ${esc(r.u)}</b>${r.ml != null ? ` = <b>${nbf((r.ml))} ml</b>` : ""} de ${esc(nom)}${r.voie ? ` <span class="ds-voie">${esc(r.voie)}</span>` : ""}</span>`;
+    const calc = `<span class="ds-calc"><b>Pour contrôle :</b> ${r.calc.map(esc).join(" → ")}${r.choix ? ` <small>(${esc(r.choix)})</small>` : ""}${r.depasse ? ` <b class="ds-alerte">Volume supérieur à la seringue préparée (${nb(r.pr.vol)} ml) : préparer ${Math.ceil(r.ml / r.pr.vol)} fois la préparation ci-dessous</b>` : ""}${r.note ? ` <small class="ds-note">${esc(r.note)}</small>` : ""}</span>`;
+    return { dose: fmt(r.dose), ml: r.ml != null ? fmt(r.ml) : null, u: r.u, nom, voie: r.voie, html: tete + calc + prepHtml(r), txt: tete };
   }
   // « ≥ 60 kg et < 75 ans = 3 mg » : au repos tout s'affiche ; victime connue, seul le cas qui s'applique reste
   function lignesVictime(html) {
-    const seg = String(html).split(/(<br\s*\/?>|\n)/);
+    const seg = String(html).split(/(<br\s*\/?>|\n|<\/div>)/);
     let etat = null, cache = 0;
     const out = seg.map(x => {
-      if (/^(<br\s*\/?>|\n)$/.test(x)) return etat === false ? "" : x;
-      const t = x.replace(/<[^>]+>/g, "").trim();
+      if (/^(<br\s*\/?>|\n|<\/div>)$/.test(x)) return etat === false ? "" : x;
+      const t = x.replace(/<[^>]+>/g, "").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&").trim();
       if (/^\+?$/.test(t)) { etat = null; return x; }
       if (/(≥|≤|<|>)\s*\d+(?:[.,]\d+)?\s*(kg|ans?)\b/.test(t) && /=|:/.test(t)) { etat = critere(t.split(/=/)[0] + ":"); }
       if (etat === false) { cache++; return ""; }
@@ -369,7 +386,7 @@
       html += `<div class="tl-p"><a class="cm-p" href="#/p/${c}/logi">${picto(c)}<span class="code ${classeCode(c)}">${c}</span><span>${esc(P[c].titre)}</span></a>${r0.pv ? equation(r0.pv) : ""}<ol class="tl">`;
       pas.forEach(([id, l]) => l.forEach((inj, j) => {
         if (inj.m !== code) return;
-        const n = L.nodes.find(x => x.id === id), d = doseTexte(inj), bo = (BOU[c] || {})[id];
+        const n = L.nodes.find(x => x.id === id), d = doseTexte(inj, c), bo = (BOU[c] || {})[id];
         let quand = (n ? premiereLigne(n) : id).replace(/\s*:?\s*injecter.*$/i, "").replace(/[:\s]+$/, "");
         if (!quand) { const e = L.edges.find(x => x.t === id), src = e && L.nodes.find(x => x.id === e.s); quand = src && src.k === "question" ? `${premiereLigne(src).replace(/\s*\?\s*$/, " ?")} ${(e.label || "").toLowerCase()}` : "Puis"; }
         html += `<li><span class="tl-q">${esc(quand)}</span><span class="tl-d">${d.manque ? `<span class="tl-m">poids ou âge ?</span> ${d.txt}` : `<b>${nb(d.dose)} ${esc(d.u)}</b>${d.ml != null ? ` = <b>${nb(d.ml)} ml</b>` : ""} ${d.voie ? `<span class="ds-voie">${esc(d.voie)}</span>` : ""}`}</span>${bo ? `<span class="tl-r">↻ ${esc(bo.rythme)}</span>` : ""}</li>`;
@@ -382,15 +399,15 @@
     const [code, id] = el.dataset.dose.split(":");
     const fiche = !!el.dataset.med;
     el.innerHTML = (DOSES[code]?.[id] || []).map((inj, j) => [inj, j]).filter(([inj]) => !fiche || inj.m === el.dataset.med).map(([inj, j]) => {
-      const d = doseTexte(inj), faits = evtsDe(code, id, j);
-      const fait = fiche ? "" : `<span class="ds-fait"><button type="button" class="b ds-ok" data-j="${j}">✓ Fait${faits.length ? ` <small>${faits.length}×</small>` : ""}</button>${faits.length ? `<span class="ds-h">${faits.map(e => heure(e.t)).join(" · ")}</span>` : ""}<span class="ds-rebours" data-j="${j}"></span></span>`;
-      return `<span class="ds">${d.manque ? `<a class="ds-m" href="#" onclick="document.querySelector('.vic')?.scrollIntoView({block:'center'});return false">Indiquer ${d.manque} ↑</a> ${d.txt}` : d.html}${fait}</span>`;
+      const d = doseTexte(inj, code), faits = evtsDe(code, id, j);
+      const fait = fiche || d.hors ? "" : `<span class="ds-fait"><button type="button" class="b ds-ok" data-j="${j}">✓ Fait${faits.length ? ` <small>${faits.length}×</small>` : ""}</button>${faits.length ? `<span class="ds-h">${faits.map(e => heure(e.t)).join(" · ")}</span>` : ""}<span class="ds-rebours" data-j="${j}"></span></span>`;
+      return `<span class="ds">${d.hors ? d.txt : d.manque ? `<a class="ds-m" href="#" onclick="document.querySelector('.vic')?.scrollIntoView({block:'center'});return false">Indiquer ${d.manque} ↑</a> ${d.txt}` : d.html}${fait}</span>`;
     }).join("");
     if (fiche) return;
     el.querySelectorAll(".ds-ok").forEach(b => b.onclick = ev => {
       ev.stopPropagation();
-      const j = +b.dataset.j, inj = DOSES[code][id][j], d = doseTexte(inj);
-      noter(code, id, j, d.manque ? (d.nom || inj.m) : `${d.nom} ${nb(d.dose)} ${d.u}${d.ml != null ? ` (${nb(d.ml)} ml)` : ""}${d.voie ? " " + d.voie : ""}`);
+      const j = +b.dataset.j, inj = DOSES[code][id][j], d = doseTexte(inj, code);
+      noter(code, id, j, d.manque ? (d.nom || inj.m) : `${d.nom} ${nbf(d.dose)} ${d.u}${d.ml != null ? ` (${nbf(d.ml)} ml)` : ""}${d.voie ? " " + d.voie : ""}`);
       majDose(el); vibrer(30);
     });
     rebours(el, code, id);
@@ -407,8 +424,11 @@
       if (!el.isConnected) { REB.delete(el); continue; }
       const [code, id] = el.dataset.dose.split(":"), iv = intervalle(code, id);
       el.querySelectorAll(".ds-rebours").forEach(r => {
-        const l = evtsDe(code, id, +r.dataset.j); if (!l.length) { r.textContent = ""; return; }
-        const reste = l[l.length - 1].t + iv - Date.now(), s_ = Math.abs(Math.round(reste / 1000));
+        const j = +r.dataset.j, m = DOSES[code]?.[id]?.[j]?.m, bo = (BOU[code] || {})[id];
+        const ici = evtsDe(code, id, j), meme = INT.evts.filter(e => e.code === code && DOSES[code]?.[e.id]?.[e.j]?.m === m);
+        if (!meme.length) { r.textContent = ""; return; }
+        if (bo && bo.max && ici.length >= bo.max) { r.textContent = `Maximum du PISU atteint (${bo.max})`; r.classList.remove("echu"); return; }
+        const reste = meme[meme.length - 1].t + iv - Date.now(), s_ = Math.abs(Math.round(reste / 1000));
         const mm = `${Math.floor(s_ / 60)}:${String(s_ % 60).padStart(2, "0")}`;
         r.textContent = reste > 0 ? `Prochaine dans ${mm}` : `Prochaine maintenant (+${mm})`;
         const echu = reste <= 0;
@@ -454,7 +474,7 @@
       const src = byId[e.s], n = byId[e.t];
       if (e.label && src.k === "question") E.push(`${ligne(src.txt).replace(/\s*\?\s*$/, "")} : ${e.label.toLowerCase()}`);
       if (n.id !== id && ["action", "medicament", "renvoi"].includes(n.k)) {
-        const ds = (DOSES[code]?.[n.id] || []).map((inj, j) => Object.assign(doseTexte(inj), { j })).filter(x => x.dose != null);
+        const ds = (DOSES[code]?.[n.id] || []).map((inj, j) => Object.assign(doseTexte(inj, code), { j })).filter(x => x.dose != null);
         const hs = j => { const l = evtsDe(code, n.id, j); return l.length ? l.map(e => heure(e.t)).join(", ") : "___ h"; };
         E.push(ds.length ? ds.map(x => `${x.nom} ${nb(x.dose)} ${x.u}${x.ml != null ? ` (${nb(x.ml)} ml)` : ""}${x.voie ? " " + x.voie : ""} à ${hs(x.j)}`).join(" ; ") : ligne(n.txt).slice(0, 160));
       }
@@ -761,7 +781,7 @@
   // ------------------------------------------------------------- scores : les tableaux du carnet, un toucher par ligne, total en direct
   // rien d'ajouté au carnet : mêmes libellés, mêmes points ; pas de seuil d'interprétation, le carnet n'en donne pas
   const SCORES = {
-    glasgow: { titre: "Score de Glasgow", court: "Glasgow", min: 3, max: 15, src: "Carnet PISU 2024, annexe « Bilan secondaire ABCDE »", page: "ANNEXE-bilan-secondaire-glasgow",
+    glasgow: { titre: "Score de Glasgow", court: "Glasgow", min: 3, max: 15, src: "Carnet PISU 2024, annexe p. 15 « Score de Glasgow (de 3 à 15) »", page: "ANNEXE-bilan-secondaire-glasgow",
       crit: [
         { id: "Y", lab: "Ouverture des yeux (Y)", ch: [[4, "Spontanée"], [3, "À la demande"], [2, "À la douleur"], [1, "Aucune"]] },
         { id: "V", lab: "Réponse verbale (V)", ch: [[5, "Orientée"], [4, "Confuse"], [3, "Paroles inappropriées"], [2, "Sons incompréhensibles"], [1, "Aucune"]] },
@@ -784,18 +804,18 @@
         { id: "col", lab: "Coloration", ch: [[0, "Cyanosé ou gris"], [1, "Acrocyanose"], [2, "Rose"]] },
       ] },
     wallace: { titre: "Règle de Wallace (adulte)", court: "Wallace", src: "Carnet PISU 2024, protocole 6A", page: "6A", unite: " %",
-      zones: [["tete", "Tête et cou (antérieur + postérieur)", 9], ["tronc", "Poitrine et abdomen", 18], ["dos", "Dos", 18], ["mig", "Membre inférieur gauche", 18], ["mid", "Membre inférieur droit", 18], ["msg", "Membre supérieur gauche", 9], ["msd", "Membre supérieur droit", 9], ["oge", "Organes génitaux externes", 1]] },
+      zones: [["tete", "Tête et cou (antérieur + postérieur)", 9], ["tronc", "Poitrine et abdomen", 18], ["dos", "Dos", 18], ["mig", "Membre inférieur gauche", 18], ["mid", "Membre inférieur droit", 18], ["msg", "Membre supérieur gauche (main comprise)", 9], ["msd", "Membre supérieur droit (main comprise)", 9], ["mag", "Main gauche seule", 1], ["mad", "Main droite seule", 1], ["oge", "Organes génitaux externes", 1]], exclusifs: [["msg", "mag"], ["msd", "mad"]] },
   };
   const SC_LIENS = { "ANNEXE-bilan-secondaire-glasgow": ["glasgow"], "ANNEXE-constantes-apgar-malinas": ["apgar", "malinas"], "6A": ["wallace"] };
   const errataLigne = cle => { const E = window.PISU_ERRATA; const l = [].concat(...Object.values(E || {}).filter(Array.isArray)); return l.find(e => e && e.ou && e.ou.startsWith(cle))?.constat; };
   function pageScore(id) {
-    const S = SCORES[id], v = {}, mains = { n: 0 };
+    const S = SCORES[id], v = {};
     document.title = `${S.titre} · PISU 44`;
     app.appendChild(h("div", { class: "p-tete" }, `<div class="pt-tx"><h1>${esc(S.titre)}</h1></div>`));
     const z = h("div", { class: "contenu sc" });
     const tot = h("div", { class: "sc-tot", role: "status", "aria-live": "polite" });
     z.appendChild(tot);
-    const total = () => S.zones ? S.zones.reduce((s, [k, , p]) => s + (v[k] ? p : 0), 0) + mains.n : S.crit.every(c => v[c.id] != null) ? S.crit.reduce((s, c) => s + v[c.id], 0) : null;
+    const total = () => S.zones ? S.zones.reduce((s, [k, , p]) => s + (v[k] ? p : 0), 0) : S.crit.every(c => v[c.id] != null) ? S.crit.reduce((s, c) => s + v[c.id], 0) : null;
     const texte = () => { const t = total(); if (S.zones) return `${S.court} : ${t} %`; return `${S.court} ${t ?? "?"}${S.max != null ? "/" + S.max : ""}${S.detail ? ` (${S.detail(v)})` : ""}`; };
     const maj = () => { const t = total(), manque = S.crit ? S.crit.filter(c => v[c.id] == null).length : 0;
       tot.innerHTML = `<b>${t ?? "?"}${S.unite || ""}</b><span>${S.detail ? esc(S.detail(v)) : S.zones ? "surface brûlée" : manque ? `encore ${manque} ligne${manque > 1 ? "s" : ""}` : "sur " + S.max}</span><button type="button" class="sc-noter"${t == null ? " disabled" : ""}>Noter${S.heure ? " l'heure" : ""}</button>`;
@@ -808,9 +828,10 @@
     });
     else {
       const f = h("fieldset", { class: "sc-c" }, `<legend>Zones brûlées (2e et 3e degré)</legend>` + S.zones.map(([k, l, p]) => `<button type="button" class="sc-b" data-k="${k}" aria-pressed="false"><span>${esc(l)}</span><b>${p} %</b></button>`).join("")
-        + `<div class="sc-mains"><span>Une main = 1 %</span><button type="button" class="sc-m" aria-label="Une main de moins">−</button><output>0</output><button type="button" class="sc-p" aria-label="Une main de plus">+</button></div>`);
-      f.addEventListener("click", e => { const b = e.target.closest(".sc-b"); if (b) { v[b.dataset.k] = !v[b.dataset.k]; b.setAttribute("aria-pressed", String(v[b.dataset.k])); maj(); }
-        if (e.target.closest(".sc-m")) mains.n = Math.max(0, mains.n - 1); if (e.target.closest(".sc-p")) mains.n = Math.min(99, mains.n + 1); $("output", f).textContent = mains.n; maj(); });
+        + `<p class="petit">Règle de Wallace du carnet : « un membre supérieur (main 1 %) 9 % ». La main est comprise dans le membre : cocher l'un retire l'autre.</p>`);
+      f.addEventListener("click", e => { const b = e.target.closest(".sc-b"); if (!b) return; const k = b.dataset.k; v[k] = !v[k];
+        if (v[k]) (S.exclusifs || []).forEach(g => { if (g.includes(k)) g.filter(x => x !== k).forEach(x => { v[x] = false; }); });
+        f.querySelectorAll(".sc-b").forEach(x => x.setAttribute("aria-pressed", String(!!v[x.dataset.k]))); maj(); });
       z.appendChild(f);
     }
     const er = S.errata && errataLigne(S.errata);
@@ -864,7 +885,7 @@
   }
   function pageTrauma() {
     document.title = "Mémo traumato · PISU 44";
-    app.appendChild(h("div", { class: "p-tete" }, `<div class="pt-tx"><h1>Mémo traumato</h1><p class="t-src">Source : « ${esc(TR.source)} ».</p></div>`));
+    app.appendChild(h("div", { class: "p-tete" }, `<div class="pt-tx"><h1>Mémo traumato</h1><p class="t-src">Source : « ${esc(TR.source)} ». ${esc(TR.source_note || "")}</p></div>`));
     const z = h("div", { class: "contenu tr" });
     const st = { dos: false, zone: null, cote: null, piece: null, doigt: null, ph: null, niveau: null, face: null, aspects: new Set(), comp: new Set(), prec: "" };
     const vue = h("div", { class: "tr-vue" });
@@ -934,7 +955,7 @@
       if (zoomMembre) { allerA(cadre(m)); }
       else if (zoomMain) allerA(boite([...m.querySelectorAll(`[data-z="${p.dataset.z}"]`)]));
       else if (!m) allerA(p.dataset.z === "abdomen" ? boite([...vue.querySelectorAll('[data-z="abdomen"]')]) : cadre(p));
-      Object.assign(st, { zone: p.dataset.z, cote: p.dataset.c || null, piece: p.dataset.p ? p.dataset.p.charAt(0).toUpperCase() + p.dataset.p.slice(1) : null, doigt: p.dataset.d ? +p.dataset.d : null, ph: p.dataset.ph ? +p.dataset.ph : null, niveau: null });
+      Object.assign(st, { zone: p.dataset.z, cote: p.dataset.c || null, piece: p.dataset.p ? ((TR.zones[p.dataset.z].os || []).find(o => o.toLowerCase().startsWith(p.dataset.p.toLowerCase())) || p.dataset.p.charAt(0).toUpperCase() + p.dataset.p.slice(1)) : null, doigt: p.dataset.d ? +p.dataset.d : null, ph: p.dataset.ph ? +p.dataset.ph : null, niveau: null, face: st.zone === p.dataset.z && st.cote === (p.dataset.c || null) ? st.face : null });
       if (TR.zones[st.zone].faces && !TR.zones[st.zone].faces.includes(st.face)) st.face = null;
       if (st.dos && !TR.zones[st.zone].faces && !TR.zones[st.zone].rachis) st.face = "postérieure";
       if (!TR.zones[st.zone].faces && /palmaire|dorsale|plantaire/.test(st.face || "")) st.face = null;
@@ -944,13 +965,13 @@
       majCarte();
     });
     $(".tr-retour", outils).onclick = () => { allerA([0, 0, 200, 420]); $(".tr-retour", outils).hidden = true; vue.classList.remove("zoom"); };
-    $(".tr-face", outils).onclick = e => { st.dos = !st.dos; e.currentTarget.setAttribute("aria-pressed", String(st.dos)); e.currentTarget.textContent = st.dos ? "Voir de face" : "Voir de dos"; vb = [0, 0, 200, 420]; $(".tr-retour", outils).hidden = true; Object.assign(st, { zone: null, cote: null, piece: null, doigt: null, ph: null }); dessiner(); majCarte(); };
+    $(".tr-face", outils).onclick = e => { st.dos = !st.dos; e.currentTarget.setAttribute("aria-pressed", String(st.dos)); e.currentTarget.textContent = st.dos ? "Voir de face" : "Voir de dos"; vb = [0, 0, 200, 420]; $(".tr-retour", outils).hidden = true; Object.assign(st, { zone: null, cote: null, piece: null, doigt: null, ph: null, face: null, niveau: null }); dessiner(); majCarte(); };
     dessiner(); majCarte();
     // références du mémo, repliées
     const ref = (titre, html) => `<details class="tr-ref"><summary>${titre}</summary>${html}</details>`;
     z.insertAdjacentHTML("beforeend", `<h2 class="tr-h">Le mémo</h2>`
       + ref("Ce que je vois à l'abordage", `<ul>${TR.abordage.map(x => `<li>${esc(x)}</li>`).join("")}</ul><h3>Ce que la victime décrit</h3><ul>${TR.decrit.map(x => `<li>${esc(x)}</li>`).join("")}</ul><h3>Localisation précise</h3><ul><li>Os / région de l'os / côté</li><li>Proximal / distal</li><li>Face palmaire / dorsale / plantaire / cou de pied</li><li>Numéro de phalange (sens de la position anatomique)</li></ul>`)
-      + ref("Repères dans l'espace", `<table class="memo-t kv"><tbody>${TR.reperes.map(([a, b]) => `<tr><th>${esc(a)}</th><td>${esc(b)}</td></tr>`).join("")}</tbody></table><p class="petit">Trois plans : frontal, sagittal, transversal. Trois axes : longitudinal, antéro-postérieur, transversal. Os long (${esc(TR.os_long.os)}) : ${TR.os_long.parties.join(", ").toLowerCase()}.</p>`)
+      + ref("Repères dans l'espace", `${TR.reperes_note ? `<p class="petit">${esc(TR.reperes_note)}</p>` : ""}<table class="memo-t kv"><tbody>${TR.reperes.map(([a, b]) => `<tr><th>${esc(a)}</th><td>${esc(b)}</td></tr>`).join("")}</tbody></table><p class="petit">Trois plans : frontal, sagittal, transversal. Trois axes : longitudinal, antéro-postérieur, transversal. Os long (${esc(TR.os_long.os)}) : ${TR.os_long.parties.join(", ").toLowerCase()}.</p>`)
       + ref("Les mouvements", `<table class="memo-t"><thead><tr><th>Mouvement</th><th>Contraire</th><th>Où</th></tr></thead><tbody>${TR.mouvements.map(([a, da, b, db, ou]) => `<tr><td><b>${esc(a)}</b><br><small>${esc(da)}</small></td><td><b>${esc(b)}</b><br><small>${esc(db)}</small></td><td><small>${esc(ou)}</small></td></tr>`).join("")}</tbody></table>`)
       + ref("Les mécanismes", `<table class="memo-t"><thead><tr><th>Mécanisme</th><th>Définition</th><th>Exemple</th></tr></thead><tbody>${TR.mecanismes.map(([a, b, c]) => `<tr><th>${esc(a)}</th><td>${esc(b)}</td><td>${esc(c)}</td></tr>`).join("")}</tbody></table>`)
       + ref("Rachis : niveaux et fonctions", `<table class="memo-t kv"><tbody>${TR.rachis.map(([a, b]) => `<tr><th>${esc(a)}</th><td>${esc(b)}</td></tr>`).join("")}</tbody></table><h3>Repères</h3><table class="memo-t kv"><tbody>${TR.rachis_reperes.map(([a, b]) => `<tr><th>${esc(a)}</th><td>${esc(b)}</td></tr>`).join("")}</tbody></table>`)
@@ -964,7 +985,7 @@
   const faible = n => /faible|pédagog/i.test(n || "");
   // un mémo se lit en tableau : tableau donné, ou lignes « clé : valeur » (XABCDE, 4H-4T, grades…) en deux colonnes
   function corpsMemo(m) {
-    let t = "";
+    let t = m.pisu ? `<p class="memo-pisu"><b>Le PISU dit :</b> ${esc(m.pisu)}</p>` : "";
     if (m.tableau) t += `<table class="memo-t"><thead><tr>${m.tableau.entetes.map(x => `<th>${esc(x)}</th>`).join("")}</tr></thead><tbody>${m.tableau.lignes.map(r => `<tr>${r.map((x, i) => i ? `<td>${esc(x) || "—"}</td>` : `<th>${esc(x)}</th>`).join("")}</tr>`).join("")}</tbody></table>`;
     const kv = m.lignes.map(x => /^([^:]{1,22}?) : (.+)$/.exec(x));
     if (!m.tableau && kv.filter(Boolean).length >= Math.max(2, m.lignes.length * 0.6))
@@ -1179,7 +1200,7 @@
   function poserVic(cle, v) {
     const c = CHAMPS[cle]; if (v == null || isNaN(v)) return;
     v = Math.min(c.max, Math.max(c.min, Math.round(v / c.pas(v)) * c.pas(v)));
-    vic[cle] = v; garderVic(); if (cle === "age") bonPublic();
+    vic[cle] = v; garderVic(); if (cle === "age") { clearTimeout(poserVic.t); poserVic.t = setTimeout(bonPublic, document.activeElement?.id === "vic-age" ? 900 : 0); }
   }
   function construireBarre() {
     barre.innerHTML = "";
@@ -1200,21 +1221,21 @@
       b.addEventListener("pointerup", fin); b.addEventListener("pointercancel", () => { x0 = null; b.classList.remove("glisse"); });
       inp.addEventListener("input", () => { if (inp.value !== "") { vic[cle] = null; poserVic(cle, +inp.value.replace(",", ".")); } });
       inp.addEventListener("keydown", e => { if (e.key === "Enter") inp.blur(); });
-      inp.addEventListener("blur", () => b.classList.remove("tape"));
+      inp.addEventListener("blur", () => { b.classList.remove("tape"); if (cle === "age") { clearTimeout(poserVic.t); bonPublic(); } });
       barre.appendChild(b);
     });
     const bc = h("button", { type: "button", class: "vp-cst", "aria-label": "Constantes pour cet âge", "aria-expanded": "false", hidden: "" }, `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg>`);
     bc.onclick = () => { cstOuvert = !cstOuvert; try { sessionStorage.setItem("pisu44-cst", cstOuvert ? "1" : ""); } catch (e) {} majCst(); };
     barre.appendChild(bc);
     const raz = h("button", { type: "button", class: "vp-raz", "aria-label": "Nouvelle victime" }, "↺");
-    raz.onclick = () => { if (!raz.classList.contains("sur")) { raz.classList.add("sur"); raz.textContent = "Effacer ?"; setTimeout(() => { raz.classList.remove("sur"); raz.textContent = "↺"; }, 3000); return; } raz.classList.remove("sur"); raz.textContent = "↺"; nouvelleIntervention(); garderVic(); };
+    raz.onclick = () => { if (!raz.classList.contains("sur")) { raz.classList.add("sur"); raz.textContent = "Effacer ?"; setTimeout(() => { raz.classList.remove("sur"); raz.textContent = "↺"; }, 3000); return; } raz.classList.remove("sur"); raz.textContent = "↺"; nouvelleIntervention(); majApresVic(); };
     barre.appendChild(raz);
   }
   // ------------------------------------------------------------- raccourci « constantes » pour l'âge saisi : tableaux du carnet, ligne de la victime en avant
   // annexe « Constantes vitales pédiatriques » (< 15 ans) et annexe « Bilan secondaire ABCDE » (adulte : pas de PAS dans le carnet)
   const CST_E = [["Nouveau-né < 7 jours", "30-60", "100-160", () => "50 à 60"], ["Nourrisson 7 j à 1 an", "25-40", "90-120", () => "70 à 80"],
     ["Enfant 1 à 7 ans", "20-30", "90-120", a => `70 + 2 × ${a} = ${70 + 2 * a}`], ["Enfant 7 à 10 ans", "18-25", "75-100", a => `70 + 2 × ${a} = ${70 + 2 * a}`], ["Enfant > 10 ans", "15-20", "75-100", () => "90 à 110"]];
-  const ligneCst = a => a < 1 ? [0, 1] : a < 7 ? [2] : a === 7 ? [2, 3] : a <= 10 ? [3] : a < 15 ? [4] : [];
+  const ligneCst = a => a < 1 ? [0, 1] : a === 1 ? [1, 2] : a < 7 ? [2] : a === 7 ? [2, 3] : a <= 10 ? [3] : a < 15 ? [4] : [];
   let cstOuvert = (() => { try { return sessionStorage.getItem("pisu44-cst") === "1"; } catch (e) { return false; } })();
   const cst = h("aside", { class: "cst", hidden: "", "aria-label": "Constantes pour cet âge" });
   document.body.appendChild(cst);
@@ -1301,6 +1322,7 @@
     return "protocoles";
   }
   function route() {
+    perimee();
     const r = decodeURIComponent(location.hash || "#/");
     app.textContent = "";
     window.scrollTo(0, 0);
