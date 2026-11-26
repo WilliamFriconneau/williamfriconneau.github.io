@@ -1,5 +1,5 @@
 {
- "version": "f45c43f411a7b2aa",
+ "version": "de9bdeb832e6cb00",
  "files": [
   {
    "path": "app.webmanifest",
@@ -193,13 +193,13 @@
   },
   {
    "path": "poche.css",
-   "sha256": "891fb69be0a74d6adfe6c69d303181f45b9c78d27f43649af2e3c7ea35195552",
-   "size": 32301
+   "sha256": "8f7a78c2a6c38accd1f469b59c53f2b8606f5f70ae91d6214ce6051ed3f5bf92",
+   "size": 33839
   },
   {
    "path": "poche.js",
-   "sha256": "da5f04ee84cfb9ca0bae54d5bfac82a40bfac73acea09c95f55c5242b5a64fe5",
-   "size": 94049
+   "sha256": "37d118d2b6db3cf4400764a3448848068941b456f2509e9651059a2602fa20e6",
+   "size": 96400
   },
   {
    "path": "preparations/M1-1.gif",

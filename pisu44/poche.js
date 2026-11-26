@@ -189,7 +189,7 @@
   const vic = INT.vic;
   const sauverInt = () => { INT.maj = Date.now(); try { localStorage.setItem(INT_CLE, JSON.stringify(INT)); } catch (e) {} majBandeauInt(); };
   const enCours = () => !!(INT.debut || INT.evts.length || vic.poids != null || vic.age != null);
-  const garderVic = () => { if (!INT.debut) INT.debut = Date.now(); sauverInt(); document.querySelectorAll("[data-dose]").forEach(majDose); document.querySelectorAll(".lg-info:not([hidden]) .saed, .lg-cote .saed").forEach(majSaed); majPerf(); majCrit(); majBarre(); };
+  const garderVic = () => { if (!INT.debut) INT.debut = Date.now(); sauverInt(); document.querySelectorAll("[data-dose]").forEach(majDose); document.querySelectorAll(".lg-info:not([hidden]) .saed, .lg-cote .saed").forEach(majSaed); majPerf(); majCrit(); majBarre(); document.querySelectorAll("[data-tl]").forEach(majTL); };
   const majPerf = () => document.querySelectorAll("[data-perf]").forEach(el => { const L = P[el.closest("[data-code]")?.dataset.code]?.logi; const n = L && L.nodes.find(x => x.id === el.dataset.perf); if (n) el.innerHTML = perfusions(n); });
   const heure = t => new Date(t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
   const evtsDe = (code, id, j) => INT.evts.filter(e => e.code === code && e.id === id && (j == null || e.j === j));
@@ -354,6 +354,30 @@
     return out + (cache ? `<span class="cr-note">selon ${[vic.poids != null ? nb(vic.poids) + " kg" : "", vic.age != null ? nb(vic.age) + " ans" : ""].filter(Boolean).join(", ")}</span>` : "");
   }
   const majCrit = () => document.querySelectorAll("[data-crit]").forEach(el => { const [c, id] = el.dataset.crit.split(":"); const n = P[c]?.logi?.nodes.find(x => x.id === id); if (n && !estQuinze(n)) el.innerHTML = lignesVictime(mmol(n.html)); });
+  // fiche médicament : par protocole, la préparation une fois, puis la frise des injections dans l'ordre du logigramme
+  function majTL(cz) {
+    const code = cz.dataset.tl;
+    let html = `<h2>Doses dans les protocoles</h2>`;
+    Object.entries(DOSES).forEach(([c, nds]) => {
+      const L = P[c]?.logi; if (!L) return;
+      const out = {}; L.edges.forEach(e => (out[e.s] = out[e.s] || []).push(e));
+      const ordre = {}, q = [L.start]; ordre[L.start] = 0; let k = 1;
+      while (q.length) { const u = q.shift(); (out[u] || []).forEach(e => { if (!(e.t in ordre)) { ordre[e.t] = k++; q.push(e.t); } }); }
+      const pas = Object.entries(nds).filter(([, l]) => l.some(inj => inj.m === code)).sort((x, y) => (ordre[x[0]] ?? 99) - (ordre[y[0]] ?? 99));
+      if (!pas.length) return;
+      const premier = pas[0][1].find(inj => inj.m === code), r0 = calculDose(premier);
+      html += `<div class="tl-p"><a class="cm-p" href="#/p/${c}/logi">${picto(c)}<span class="code ${classeCode(c)}">${c}</span><span>${esc(P[c].titre)}</span></a>${r0.pv ? equation(r0.pv) : ""}<ol class="tl">`;
+      pas.forEach(([id, l]) => l.forEach((inj, j) => {
+        if (inj.m !== code) return;
+        const n = L.nodes.find(x => x.id === id), d = doseTexte(inj), bo = (BOU[c] || {})[id];
+        let quand = (n ? premiereLigne(n) : id).replace(/\s*:?\s*injecter.*$/i, "").replace(/[:\s]+$/, "");
+        if (!quand) { const e = L.edges.find(x => x.t === id), src = e && L.nodes.find(x => x.id === e.s); quand = src && src.k === "question" ? `${premiereLigne(src).replace(/\s*\?\s*$/, " ?")} ${(e.label || "").toLowerCase()}` : "Puis"; }
+        html += `<li><span class="tl-q">${esc(quand)}</span><span class="tl-d">${d.manque ? `<span class="tl-m">poids ou âge ?</span> ${d.txt}` : `<b>${nb(d.dose)} ${esc(d.u)}</b>${d.ml != null ? ` = <b>${nb(d.ml)} ml</b>` : ""} ${d.voie ? `<span class="ds-voie">${esc(d.voie)}</span>` : ""}`}</span>${bo ? `<span class="tl-r">↻ ${esc(bo.rythme)}</span>` : ""}</li>`;
+      }));
+      html += `</ol></div>`;
+    });
+    cz.innerHTML = html;
+  }
   function majDose(el) {
     const [code, id] = el.dataset.dose.split(":");
     const fiche = !!el.dataset.med;
@@ -476,9 +500,19 @@
             if (aDose) { const d = h("div", { class: "lg-dose", "data-dose": `${code}:${n.id}` }); majDose(d); info.appendChild(d); }
             if (n.k === "appel") { const sd = h("div", { class: "saed", "data-saed": `${code}:${n.id}` }, `<p class="saed-t">Bilan au 15</p><div class="saed-c"></div>`); info.appendChild(sd); }
             assoc.forEach(autre => {
-              const det = h("details", { class: "lg-imb" }, `<summary>${picto(autre)}Voir le ${autre} ici</summary>`);
-              det.addEventListener("toggle", () => { if (det.open && !det.querySelector(".logi")) det.appendChild(logigramme(autre, P[autre].logi, prof + 1)); });
-              info.appendChild(det);
+              // le protocole associé s'ouvre sous le nœud, dans le logigramme ; les branches voisines se replient
+              const bt = h("button", { type: "button", class: "b lg-imb-b" }, `${picto(autre)}Voir le ${autre} ici`);
+              bt.onclick = ev => {
+                ev.stopPropagation();
+                const z = wrap.querySelector(":scope > .lg-imb-zone");
+                const pousser = on => { for (let br = wrap.closest(".lg-br"); br; br = br.parentElement.closest(".lg-br")) { const sp = br.parentElement; sp.classList.toggle("pousse", on); [...sp.children].forEach(f => { f.classList.toggle("choisie", on && f === br); f.classList.toggle("ecartee", on && f !== br); }); } };
+                if (z) { z.remove(); pousser(false); bt.innerHTML = `${picto(autre)}Voir le ${autre} ici`; return; }
+                const zone = h("div", { class: "lg-imb-zone" }, `<p class="lg-imb-t">${picto(autre)}${autre} · ${esc(P[autre].titre)}</p>`);
+                zone.appendChild(logigramme(autre, P[autre].logi, prof + 1));
+                wrap.appendChild(zone); pousser(true); bt.innerHTML = `Fermer le ${autre}`;
+                zone.scrollIntoView({ block: "start", behavior: calme() ? "auto" : "smooth" });
+              };
+              info.appendChild(bt);
             });
             if (inf) info.appendChild(h("details", { class: "lg-plusinfo" }, `<summary>Fiche et protocole</summary>${inf}`));
             wrap.appendChild(info);
@@ -523,7 +557,7 @@
       i.hidden = !ouvrir; n.setAttribute("aria-expanded", String(ouvrir));
     };
     // grand écran : les infos vont dans un panneau à droite, à hauteur de lecture, au lieu de recouvrir le logigramme
-    const large = () => matchMedia("(min-width: 1100px)").matches;
+    const large = () => !prof && matchMedia("(min-width: 1100px)").matches;
     const cote = h("aside", { class: "lg-cote", "aria-live": "polite" }, `<p class="lc-vide">Survoler ou cliquer un nœud marqué <span class="lg-plus-ex">i</span> : ce que disent la fiche et le protocole s'affiche ici.</p>`);
     let fixe = null;
     let deplace = null;
@@ -790,18 +824,9 @@
     const { inc, cor } = errataPour(code);
     const liste = [{ id: "fiche", titre: "Fiche", rendre: z => {
       if (m.protos.length) z.appendChild(h("section", { class: "bloc protos" }, `<h2>Utilisé dans</h2>${m.protos.filter(c => P[c]).map(lienCode).join("")}`));
-      const usages = [];
-      Object.entries(DOSES).forEach(([c, nds]) => Object.entries(nds).forEach(([id, l]) => { if (P[c]?.logi && l.some(inj => inj.m === code)) usages.push([c, id]); }));
-      if (usages.length) {
-        const cz = h("section", { class: "bloc calc-med" }, `<h2>Calculer la dose</h2><p class="petit">Poids et âge : en bas de l'écran.</p>`);
-        const vus = new Set();
-        usages.forEach(([c, id]) => {
-          const n = P[c].logi.nodes.find(x => x.id === id); const cle = c + (n ? premiereLigne(n) : id);
-          if (vus.has(cle)) return; vus.add(cle);
-          cz.appendChild(h("div", { class: "cm-l" }, `<a class="cm-p" href="#/p/${c}/logi/${id}">${picto(c)}<span class="code ${classeCode(c)}">${c}</span><span>${esc(n ? premiereLigne(n) : id)}</span></a><div class="lg-dose" data-dose="${c}:${id}" data-med="${code}"></div>`));
-        });
-        z.appendChild(cz);
-        cz.querySelectorAll("[data-dose]").forEach(majDose);
+      if (Object.values(DOSES).some(nds => Object.values(nds).some(l => l.some(inj => inj.m === code)))) {
+        const cz = h("section", { class: "bloc calc-med", "data-tl": code });
+        z.appendChild(cz); majTL(cz);
       }
       if ((VID[code] || []).length) z.appendChild(h("div", { class: "preps" }, `<h2>Préparation</h2>${VID[code].map(videoHtml).join("")}`));
       z.appendChild(fiche(m.fiche));

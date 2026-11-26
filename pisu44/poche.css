@@ -385,3 +385,23 @@ body.peds::before{content:"";position:fixed;right:-40px;bottom:120px;width:min(7
 .lg-choix.multi .lg-choix.multi>.lg-onglets{position:static}
 .ds-prep ol{margin:4px 0 2px;padding-left:20px}
 .ds-prep li{margin:2px 0}
+/* frise des doses sur la fiche médicament */
+.tl-p{margin:12px 0;padding-top:8px;border-top:1px solid var(--line)}
+.tl{list-style:none;margin:8px 0 0;padding:0 0 0 14px;border-left:3px solid #1f5f99}
+.tl li{position:relative;padding:6px 0 8px 10px}
+.tl li::before{content:"";position:absolute;left:-21px;top:12px;width:11px;height:11px;border-radius:50%;background:#1f5f99;border:2px solid var(--panel)}
+.tl-q{display:block;font-size:13px;color:var(--muted);font-weight:700}
+.tl-d{display:block;font-size:16px}
+.tl-r{display:block;font-size:12.5px;color:#7a4fc0;font-weight:800}
+.tl-m{font-size:12px;font-weight:900;color:#8a5a00;background:rgba(224,123,0,.15);border-radius:6px;padding:1px 6px}
+/* protocole associé ouvert dans le logigramme : les branches voisines se replient */
+.lg-imb-b{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;margin-top:8px;font-weight:900}
+.lg-imb-b .picto{width:26px;height:26px}
+.lg-imb-zone{margin:10px 0 0;padding:6px 8px 10px;border:2px dashed var(--muted);border-radius:14px;background:var(--bg)}
+.lg-imb-t{display:flex;align-items:center;gap:8px;margin:2px 0 6px;font-weight:900}
+.lg-imb-t .picto{width:28px;height:28px}
+.logi .lg-split.pousse>.lg-br.ecartee{flex:0 0 52px!important;max-height:160px;overflow:hidden;opacity:.3}
+.logi .lg-split.pousse>.lg-br.choisie{flex:1 1 auto!important}
+.lg-imb-zone .logi{display:block!important}
+.lg-imb-zone .lg-cote{display:none!important}
+@media (min-width:1100px){ .lg-imb-zone .logi .lg-info:not([hidden]){display:block!important} }
