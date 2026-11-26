@@ -1,5 +1,5 @@
 {
- "version": "de9bdeb832e6cb00",
+ "version": "87fd020f7f6ab580",
  "files": [
   {
    "path": "app.webmanifest",
@@ -35,6 +35,11 @@
    "path": "data/medicaments.js",
    "sha256": "699d9da075612cc34a9ecf32bb31bf25b6fc15c62ede27e8d3603e4e41a8a17a",
    "size": 50390
+  },
+  {
+   "path": "data/memos.js",
+   "sha256": "654ec836bcb82b5029dadf6143a909cd6daec0d9799bc16ce66af5c83b852a0c",
+   "size": 38916
   },
   {
    "path": "data/pages.js",
@@ -188,18 +193,18 @@
   },
   {
    "path": "index.html",
-   "sha256": "0d7ef8388bbbb78f24860fba74712c63522aabf521dde6e3fc0910923fb6c475",
-   "size": 1531
+   "sha256": "a92e63e1e40e536eda29590a3be437448893a7d6df921e8823712fc685a268ad",
+   "size": 1569
   },
   {
    "path": "poche.css",
-   "sha256": "8f7a78c2a6c38accd1f469b59c53f2b8606f5f70ae91d6214ce6051ed3f5bf92",
-   "size": 33839
+   "sha256": "a89727769ee8ffef805b9041aebf98ab19791eb8dec08b0a7abb3e79a5be6bf5",
+   "size": 34517
   },
   {
    "path": "poche.js",
-   "sha256": "37d118d2b6db3cf4400764a3448848068941b456f2509e9651059a2602fa20e6",
-   "size": 96400
+   "sha256": "176bc40f07da441090604a11bd9f3ce4d0de4c9881c2ec27263296b2f0da12e8",
+   "size": 98172
   },
   {
    "path": "preparations/M1-1.gif",

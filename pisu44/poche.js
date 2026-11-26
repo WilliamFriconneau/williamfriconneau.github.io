@@ -753,6 +753,17 @@
     }
     app.appendChild(z);
   }
+  // ------------------------------------------------------------- aide-mémoire : court, sourcé, le PISU prime
+  const faible = n => /faible|pédagog/i.test(n || "");
+  function blocMemos(l) {
+    return h("div", { class: "memos" }, `<p class="memo-avt">Aide-mémoire. <b>Le PISU prime</b> en cas de différence.</p>` + l.map(m => `<section class="memo"><h3>${esc(m.titre)}</h3><ul>${m.lignes.map(x => `<li>${esc(x)}</li>`).join("")}</ul><details class="memo-src"><summary>Source${m.sources.length > 1 ? "s" : ""}${m.sources.some(x => faible(x.niveau)) ? ' <span class="memo-faible">niveau faible</span>' : ""}</summary><ul>${m.sources.map(x => `<li><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.titre)}</a><small>${[x.editeur, x.niveau, x.date].filter(Boolean).map(esc).join(" · ")}</small></li>`).join("")}</ul></details></section>`).join(""));
+  }
+  function pageMemo(id) {
+    const m = (window.PISU_MEMOS?.general || []).find(x => x.id === id);
+    document.title = `${m.titre} · PISU 44`;
+    app.appendChild(h("div", { class: "p-tete" }, `<div class="pt-tx"><h1>${esc(m.titre)}</h1></div>`));
+    const z = h("div", { class: "contenu" }); z.appendChild(blocMemos([m])); app.appendChild(z);
+  }
   function pagePlus() {
     document.title = "Plus · PISU 44";
     const gens = [...ORDRE_GEN.filter(c => P[c]), ...Object.keys(P).filter(c => estGen(c) && !ORDRE_GEN.includes(c))];
@@ -760,6 +771,7 @@
     app.appendChild(h("div", { class: "contenu accueil" }, `<h1 class="h-rub">Plus</h1>`
       + `<section class="bloc"><h2>Soutien sanitaire opérationnel</h2>${PROTO_SSO.filter(c => P[c]).map(lienCode).join("")}</section>`
       + `<section class="bloc"><h2>Actes de télémédecine</h2>${PROTO_AT.filter(c => P[c]).map(lienCode).join("")}</section>`
+      + ((window.PISU_MEMOS?.general || []).length ? `<section class="bloc"><h2>Aide-mémoire</h2>${PISU_MEMOS.general.map(m => `<a class="ligne" href="#/memo/${m.id}"><span>${esc(m.titre)}</span></a>`).join("")}</section>` : "")
       + (C && C.fiches.length ? `<section class="bloc"><h2>Gestes infirmiers de base</h2>${C.fiches.map(f => `<a class="ligne" href="#/c/${f.id}"><span>${esc(f.titre)}</span></a>`).join("")}<a class="ligne" href="#/c/cadre"><span>Le cadre infirmier en 2026</span></a></section>` : "")
       + `<section class="bloc"><h2>Généralités et annexes</h2>${gens.map(c => `<a class="ligne" href="#/p/${c}"><span>${esc(P[c].titre)}</span></a>`).join("")}</section>`
       + (installe() ? "" : `<section class="bloc"><h2>Sur l'écran d'accueil</h2><p class="petit">Le carnet s'installe comme une application, sans store, et marche sans réseau : tout est téléchargé à la première ouverture. Pour mettre à jour, tirer la page vers le bas avec du réseau. iPhone : Safari, bouton Partager, « Sur l'écran d'accueil ». Android : Chrome, menu ⋮, « Installer l'application ».</p><button class="ligne b-inst" type="button" hidden><span>Installer PISU 44 sur cet appareil</span></button></section>`)));
@@ -790,6 +802,8 @@
     if (p.logi) liste.push({ id: "logi", titre: "Logigramme", rendre: z => z.appendChild(logigramme(code, p.logi)) });
     if (p.fiche) liste.push({ id: "fiche", titre: /AT$/.test(code) ? "Texte" : estGen(code) ? "Texte" : "Fiche", rendre: z => z.appendChild(fiche(p.fiche)) });
     if (p.protocole) liste.push({ id: "protocole", titre: "Protocole", rendre: z => z.appendChild(fiche(p.protocole)) });
+    const memos = window.PISU_MEMOS?.par_pisu?.[code] || [];
+    if (memos.length) liste.push({ id: "memo", titre: "Mémo", rendre: z => z.appendChild(blocMemos(memos)) });
     // « À confirmer » n'apparaît plus dans les protocoles : on y accède par le menu caché de « Plus »
     if (partie === "confirmer" && (inc.length || cor.length)) liste.push({ id: "confirmer", titre: `À confirmer <small>${inc.length + cor.length}</small>`, rendre: z => z.appendChild(blocConfirmer(code)) });
     if (!liste.length) { app.appendChild(h("p", { class: "vide" }, "Page vide.")); return; }
@@ -1025,7 +1039,7 @@
   function rubrique(r) {
     if (/^#\/(med|medicaments)/.test(r)) return "medicaments";
     if (/^#\/(t\/|techniques)/.test(r)) return "techniques";
-    if (/^#\/(plus|reste|c\/|confirmer)/.test(r)) return "plus";
+    if (/^#\/(plus|reste|c\/|confirmer|memo|journal)/.test(r)) return "plus";
     const m = r.match(/^#\/p\/([^/]+)/);
     if (m && (estGen(m[1]) || /SSO$|AT$/.test(m[1]))) return "plus";
     return "protocoles";
@@ -1045,6 +1059,7 @@
     else if ((m = r.match(/^#\/c\/([a-z0-9-]+)$/)) && window.PISU_COMP && (m[1] === "cadre" || PISU_COMP.fiches.some(f => f.id === m[1]))) pageComp(m[1]);
     else if (r === "#/confirmer") pageConfirmer();
     else if (r === "#/journal") pageJournal();
+    else if ((m = r.match(/^#\/memo\/([a-z0-9-]+)$/)) && (window.PISU_MEMOS?.general || []).some(x => x.id === m[1])) pageMemo(m[1]);
     else if (r === "#/medicaments") pageMedicaments();
     else if (r === "#/techniques") pageTechniques();
     else if (/^#\/(plus|reste)$/.test(r)) pagePlus();
