@@ -1008,6 +1008,12 @@
     app.appendChild(h("div", { class: "p-tete" }, `<div class="pt-tx"><h1>${esc(m.titre)}</h1></div>`));
     const z = h("div", { class: "contenu" }); z.appendChild(blocMemos([m])); app.appendChild(z);
   }
+  // notes de version : ce qui change, et ce qu'il reste à corriger dans le carnet
+  function pageVersions() {
+    document.title = "Notes de version · PISU 44";
+    const l = (t, x) => x && x.length ? `<h3>${t}</h3><ul>${x.map(y => `<li>${esc(y)}</li>`).join("")}</ul>` : "";
+    app.appendChild(h("div", { class: "contenu fiche" }, `<h1 class="h-rub">Notes de version</h1>` + (window.PISU_VERSIONS?.versions || []).map(v => `<section class="bloc"><h2>${v.date.split("-").reverse().join("/")} · ${esc(v.titre)}</h2>${l("Nouveau", v.nouveau)}${l("Corrigé", v.corrige)}${l("Corrections à apporter au carnet (à remonter au SSSM)", v.a_corriger)}${l("Reste à vérifier", v.a_tester)}</section>`).join("")));
+  }
   function pagePlus() {
     document.title = "Plus · PISU 44";
     const gens = [...ORDRE_GEN.filter(c => P[c]), ...Object.keys(P).filter(c => estGen(c) && !ORDRE_GEN.includes(c))];
@@ -1022,6 +1028,7 @@
     const bi = $(".b-inst", app);
     if (bi && installer) { bi.hidden = false; bi.onclick = async () => { installer.prompt(); await installer.userChoice; installer = null; bi.hidden = true; }; }
     // à propos ; trois touchers rapides dessus ouvrent le menu caché des points à confirmer
+    if (window.PISU_VERSIONS) $(".contenu", app).insertAdjacentHTML("beforeend", `<section class="bloc"><h2>Version</h2><a class="ligne" href="#/versions"><span>Notes de version <small>${PISU_VERSIONS.versions[0].date.split("-").reverse().join("/")}</small></span></a></section>`);
     const ap = h("p", { class: "apropos" }, `Carnet de travail personnel, par William Friconneau, infirmier principal SPV. Le PDF « PISU 2024 » du SSSM 44 fait foi.`);
     const cache = h("section", { class: "bloc confirmer-menu", hidden: "" }, `<h2>À confirmer</h2><p class="petit">Écarts au PDF et incohérences relevés pendant la saisie, montrés tels quels.</p>`
       + Object.keys(P).filter(c => { const e = errataPour(c); return e.inc.length || e.cor.length; }).map(c => { const e = errataPour(c); return `<a class="ligne" href="#/p/${c}/confirmer"><span class="code ${classeCode(c)}">${estGen(c) ? "" : c}</span><span>${esc(P[c].titre)}</span><span class="pr-n">${e.inc.length + e.cor.length}</span></a>`; }).join("")
@@ -1315,7 +1322,7 @@
     if (/^#\/(med\/|medicaments)/.test(r)) return "plus";
     if (r === "#/sso") return "sso";
     if (/^#\/(t\/|techniques)/.test(r)) return "techniques";
-    if (/^#\/(plus|reste|c\/|confirmer|memo|journal|score|trauma)/.test(r)) return "plus";
+    if (/^#\/(plus|reste|c\/|confirmer|memo|journal|score|trauma|versions)/.test(r)) return "plus";
     const m = r.match(/^#\/p\/([^/]+)/);
     if (m && /SSO$/.test(m[1])) return "sso";
     if (m && estGen(m[1])) return "plus";
@@ -1337,6 +1344,7 @@
     else if ((m = r.match(/^#\/c\/([a-z0-9-]+)$/)) && window.PISU_COMP && (m[1] === "cadre" || PISU_COMP.fiches.some(f => f.id === m[1]))) pageComp(m[1]);
     else if (r === "#/confirmer") pageConfirmer();
     else if (r === "#/journal") pageJournal();
+    else if (r === "#/versions") pageVersions();
     else if (r === "#/trauma" && TR) pageTrauma();
     else if ((m = r.match(/^#\/score\/([a-z]+)$/)) && SCORES[m[1]]) pageScore(m[1]);
     else if ((m = r.match(/^#\/memo\/([a-z0-9-]+)$/)) && (window.PISU_MEMOS?.general || []).some(x => x.id === m[1])) pageMemo(m[1]);

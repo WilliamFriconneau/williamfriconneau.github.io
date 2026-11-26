@@ -40,7 +40,8 @@ async function majSite() {
   await Promise.all([un(), un(), un(), un()]);
   await neuf.put(url("manifest.json"), new Response(JSON.stringify(m), { headers: { "Content-Type": "application/json" } }));
   await (await caches.open(ETAT)).put("actif", new Response(nom));
-  for (const k of await caches.keys()) if (k.startsWith(PREFIXE) && k !== nom && k !== ETAT) await caches.delete(k);
+  // on garde la version précédente : une page encore ouverte peut lui demander une image pas encore affichée
+  for (const k of await caches.keys()) if (k.startsWith(PREFIXE) && k !== nom && k !== avant && k !== ETAT) await caches.delete(k);
   return { version: m.version, nouveau: !!avant };
 }
 async function diffuser(msg) { for (const c of await self.clients.matchAll({ includeUncontrolled: true })) c.postMessage(msg); }
@@ -62,6 +63,7 @@ self.addEventListener("fetch", e => {
       const r = await c.match(u);
       if (r) return r;
     }
-    return fetch(req);
+    try { return await fetch(req); }
+    catch (err) { const r = await caches.match(req.url.split("#")[0].split("?")[0]); if (r) return r; throw err; }
   })());
 });

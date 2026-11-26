@@ -1,5 +1,5 @@
 {
- "version": "3509963a0c26db82",
+ "version": "204f7f8daa17c252",
  "files": [
   {
    "path": "app.webmanifest",
@@ -43,13 +43,18 @@
   },
   {
    "path": "data/pages.js",
-   "sha256": "4c53e84d955c3b72805fbe006207ea624993c9b55fe7895075329c6a82675609",
-   "size": 332528
+   "sha256": "edb98bfe1be297377ee917b6bdd5d6d06d820e76a529543608742bf8f72e77ee",
+   "size": 332532
   },
   {
    "path": "data/trauma.js",
    "sha256": "60026741e18f6c67da0150588247a18ac20d58d6ae8358a8ae69d45151634abe",
    "size": 10429
+  },
+  {
+   "path": "data/versions.js",
+   "sha256": "9e83f78698fd2b43192dfcf537c7aafc04f08668d5ee46192e5b227b982ce828",
+   "size": 3140
   },
   {
    "path": "icones/icone-180.png",
@@ -223,8 +228,8 @@
   },
   {
    "path": "index.html",
-   "sha256": "f68c6430754b1862c7b902b68e448f6054be1b23a1678c9d5bb57a70de30180b",
-   "size": 1608
+   "sha256": "58d3a09e09bcf56aafe74ebf75bba0b41373be1d0a484becbc13ce7bd770597b",
+   "size": 1649
   },
   {
    "path": "poche.css",
@@ -233,8 +238,8 @@
   },
   {
    "path": "poche.js",
-   "sha256": "646265fb4fe1fbf928d21b31dbea440b06110e3bedc5a70b1c7337e53865203c",
-   "size": 133453
+   "sha256": "879a535197798e4a6264712c13bafd49312cd0c99566da375629fc64fadfecf8",
+   "size": 134509
   },
   {
    "path": "preparations/M1-1.gif",
@@ -393,8 +398,8 @@
   },
   {
    "path": "sw.js",
-   "sha256": "ad2c422952ae273f1213ab45538045601c6321576cb47bec54d58a25d0ddfda4",
-   "size": 3554
+   "sha256": "b33ae315c8e985c92c35eeeb471c59d84ab166777c5b444448de536b8d94f743",
+   "size": 3811
   },
   {
    "path": "techniques/accueil-urgences-1.jpg",
