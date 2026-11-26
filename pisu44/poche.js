@@ -296,8 +296,8 @@
     const p = P[c];
     return `<a class="ligne proto ${classeCode(c)}" href="#/p/${c}">${picto(c)}<span class="code ${classeCode(c)}">${c}</span><span>${esc(p.titre)}</span>${errataPour(c).inc.length ? `<span class="pr-n" title="points à confirmer">${errataPour(c).inc.length}</span>` : ""}</a>`;
   }
-  // dans les apps PISU 44 (vue web Android « ; wv) », vue web iOS sans « Safari ») : pas de proposition d’installation
-  const dansLApp = () => { const u = navigator.userAgent; return /; wv\)/.test(u) || (/iPhone|iPad/.test(u) && !/Safari\//.test(u)); };
+  // déjà ouvert depuis l'écran d'accueil : inutile de proposer l'installation
+  const installe = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
   // ------------------------------------------------------------- récents : les dernières fiches ouvertes, pour revenir vite en intervention
   const RECENTS_CLE = "pisu44-recents";
   const lireRecents = () => { try { return JSON.parse(localStorage.getItem(RECENTS_CLE) || "[]"); } catch (e) { return []; } };
@@ -370,7 +370,7 @@
       + `<section class="bloc"><h2>Actes de télémédecine</h2>${PROTO_AT.filter(c => P[c]).map(lienCode).join("")}</section>`
       + (C && C.fiches.length ? `<section class="bloc"><h2>Gestes infirmiers de base</h2>${C.fiches.map(f => `<a class="ligne" href="#/c/${f.id}"><span>${esc(f.titre)}</span></a>`).join("")}<a class="ligne" href="#/c/cadre"><span>Le cadre infirmier en 2026</span></a></section>` : "")
       + `<section class="bloc"><h2>Généralités et annexes</h2>${gens.map(c => `<a class="ligne" href="#/p/${c}"><span>${esc(P[c].titre)}</span></a>`).join("")}<a class="ligne" href="#/confirmer"><span>Points à confirmer sans protocole précis</span></a></section>`
-      + (dansLApp() ? "" : `<section class="bloc"><h2>Sur l'écran d'accueil</h2><p class="petit">Le carnet s'installe comme une application, sans store, et marche sans réseau : tout est téléchargé à la première ouverture. Pour mettre à jour, tirer la page vers le bas avec du réseau. iPhone : Safari, bouton Partager, « Sur l'écran d'accueil ». Android : Chrome, menu ⋮, « Installer l'application ».</p><button class="ligne b-inst" type="button" hidden><span>Installer PISU 44 sur cet appareil</span></button></section>`)));
+      + (installe() ? "" : `<section class="bloc"><h2>Sur l'écran d'accueil</h2><p class="petit">Le carnet s'installe comme une application, sans store, et marche sans réseau : tout est téléchargé à la première ouverture. Pour mettre à jour, tirer la page vers le bas avec du réseau. iPhone : Safari, bouton Partager, « Sur l'écran d'accueil ». Android : Chrome, menu ⋮, « Installer l'application ».</p><button class="ligne b-inst" type="button" hidden><span>Installer PISU 44 sur cet appareil</span></button></section>`)));
     const bi = $(".b-inst", app);
     if (bi && installer) { bi.hidden = false; bi.onclick = async () => { installer.prompt(); await installer.userChoice; installer = null; bi.hidden = true; }; }
   }
@@ -592,7 +592,7 @@
   let installer = null;
   window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installer = e; });
   // le manifeste d'installation seulement sur le web (en fichier local, Chrome le refuse et le signale en erreur)
-  if (/^https?:$/.test(location.protocol) && !dansLApp()) document.head.appendChild(h("link", { rel: "manifest", href: "app.webmanifest" }));
+  if (/^https?:$/.test(location.protocol)) document.head.appendChild(h("link", { rel: "manifest", href: "app.webmanifest" }));
   // tirer vers le bas en haut de page : cherche une mise à jour si le réseau est là ; sans réseau, la copie enregistrée reste telle quelle
   const tir = h("div", { class: "tirer", "aria-hidden": "true" }, `<span class="ti-f">↓</span><span class="ti-t">Tirer pour mettre à jour</span>`);
   document.body.appendChild(tir);
@@ -617,10 +617,9 @@
     const finir = txt => { $(".ti-t", tir).textContent = txt; setTimeout(() => { tir.classList.remove("tourne", "pret"); tir.style.transform = ""; tir.style.opacity = "0"; tirEnCours = false; }, 1400); };
     if (!navigator.onLine) return finir("Pas de réseau : la version enregistrée reste utilisée.");
     if (demandeTir) demandeTir(finir);
-    else if (window.webkit?.messageHandlers?.pisu) { window.webkit.messageHandlers.pisu.postMessage("maj"); finir("Mise à jour demandée."); }
-    else finir("Pas de mise à jour possible ici.");
+    else { finir("Rechargement depuis le réseau…"); setTimeout(() => location.reload(), 500); }
   });
-  if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost") && !dansLApp()) {
+  if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
     let majPrete = false, telecharge = false, attenteTir = null;
     demandeTir = finir => {
       attenteTir = finir;

@@ -1,5 +1,5 @@
 {
- "version": "4b499ec7617a159c",
+ "version": "cba33499af0c93bd",
  "files": [
   {
    "path": "app.webmanifest",
@@ -193,8 +193,8 @@
   },
   {
    "path": "poche.js",
-   "sha256": "d7d035e9fd93e9472da8fae8024691a2f66e14c7e24634014c525b4b6ef67002",
-   "size": 50152
+   "sha256": "0fc72e7ef832d8786c14e89c97119bcc19aed44a03101d27d04c04819ec9a117",
+   "size": 49952
   },
   {
    "path": "preparations/M1-1.gif",
