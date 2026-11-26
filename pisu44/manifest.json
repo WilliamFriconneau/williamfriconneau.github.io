@@ -1,5 +1,5 @@
 {
- "version": "7dd48999cafd8934",
+ "version": "efd17a24e66850bb",
  "files": [
   {
    "path": "app.webmanifest",
@@ -45,6 +45,11 @@
    "path": "data/pages.js",
    "sha256": "7e5cb500e6a6853ee79eb948d05e9d400aaed2850999591f28880bf841baf45a",
    "size": 330827
+  },
+  {
+   "path": "data/trauma.js",
+   "sha256": "78fd7f3ad82a35ead22af9044e3cc6dd7e58d882e775581c1a4f236feb419dae",
+   "size": 8708
   },
   {
    "path": "icones/icone-180.png",
@@ -193,18 +198,18 @@
   },
   {
    "path": "index.html",
-   "sha256": "a92e63e1e40e536eda29590a3be437448893a7d6df921e8823712fc685a268ad",
-   "size": 1569
+   "sha256": "f68c6430754b1862c7b902b68e448f6054be1b23a1678c9d5bb57a70de30180b",
+   "size": 1608
   },
   {
    "path": "poche.css",
-   "sha256": "2800b22e83a4ee7cdef3d696766d41f6001c0515f481339f4c7969b8c2583d5d",
-   "size": 39202
+   "sha256": "5baaeb2a89c007bcc279584d3884a35c62e094b26423d993110982c6292b32b2",
+   "size": 42297
   },
   {
    "path": "poche.js",
-   "sha256": "d697b2f715b24b8bbc6d469df0477b3ce39c91e30b2376e2022e4a7bec885388",
-   "size": 110573
+   "sha256": "00e08fe1c8755fc34841635e2c3f392fcb27490140dd7b8bda3fa9e37feba60e",
+   "size": 129835
   },
   {
    "path": "preparations/M1-1.gif",
@@ -1900,6 +1905,51 @@
    "path": "techniques/vsso-9.jpg",
    "sha256": "5036cd435b4f6aa985ab0b9862f2e6c9961fbfd23dce3bd30e1436cbae7db8fd",
    "size": 67572
+  },
+  {
+   "path": "trauma/t-06.jpg",
+   "sha256": "05379dd0df981ca0c618b8438a98dba8366463d266d0123f9140abe6f8150100",
+   "size": 70937
+  },
+  {
+   "path": "trauma/t-07.jpg",
+   "sha256": "3cf2715a4c6d1355f1a628b6d9ca61158a06514f7cf8865c24eba55a39c97917",
+   "size": 59151
+  },
+  {
+   "path": "trauma/t-08.jpg",
+   "sha256": "fd696eae6384bfc8ff05d02cb4938f7904d848cfc3ab46bf8124405afbb542d5",
+   "size": 104999
+  },
+  {
+   "path": "trauma/t-09.jpg",
+   "sha256": "90bd76a91d33702bb90acb4174ebb01647c6abf54d7636b735a26194fcb117d4",
+   "size": 89878
+  },
+  {
+   "path": "trauma/t-10.jpg",
+   "sha256": "76c9051250014bf6b6abe05abd1f7c722568c35abbd6babfc1686e0f80692ce0",
+   "size": 72610
+  },
+  {
+   "path": "trauma/t-11.jpg",
+   "sha256": "4c20a22cbd60743dca53e72219a24b6c4d563b73321107e8d093d77f6edb0aff",
+   "size": 69573
+  },
+  {
+   "path": "trauma/t-12.jpg",
+   "sha256": "3a197d8a3ee871d35679f9312a5ecef4f390a6e97257b1214566ed8abd0d259a",
+   "size": 83239
+  },
+  {
+   "path": "trauma/t-13.jpg",
+   "sha256": "d53086f40130880eca96a1a4fe7428b9d8d3eefe7485f0bdc2d38fbc7c5852f4",
+   "size": 70548
+  },
+  {
+   "path": "trauma/t-14.jpg",
+   "sha256": "aa1cfbe0781e24f73171f4c2536d029bbeb1d5d3ad782cd30f680537a5e49115",
+   "size": 55039
   }
  ]
 }

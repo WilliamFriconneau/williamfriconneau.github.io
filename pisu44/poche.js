@@ -817,6 +817,149 @@
     z.appendChild(h("p", { class: "petit sc-src" }, `Source : <a href="#/p/${S.page}">${esc(S.src)}</a>. Recopié tel quel, sans seuil d'interprétation : le carnet n'en donne pas.${er ? `<br>Écart relevé dans le carnet : ${esc(er)}` : ""}`));
     app.appendChild(z); maj();
   }
+  // ------------------------------------------------------------- mémo traumato : silhouette cliquable, zoom sur le membre, puis sur la pièce ; décrire la lésion comme le mémo
+  const TR = window.PISU_TRAUMA;
+  const DE = { tete: "de la tête", cou: "du cou", thorax: "du thorax", abdomen: "de l'abdomen", bassin: "du bassin", dos: "du dos", epaule: "de l'épaule", bras: "du bras", coude: "du coude", avantbras: "de l'avant-bras", poignet: "du poignet", main: "de la main", hanche: "de la hanche", cuisse: "de la cuisse", genou: "du genou", jambe: "de la jambe", cheville: "de la cheville", pied: "du pied" };
+  // silhouette (viewBox 0 0 200 420), dessinée pour le membre à gauche de l'écran puis recopiée en miroir
+  // de face, la droite de la victime est à gauche de l'écran ; bras légèrement écartés, paumes vers l'avant (position anatomique)
+  const MS = [["epaule", '<circle cx="62" cy="80" r="11"/>'], ["bras", '<path d="M52 88 Q51 86 62 86 Q72 87 70 96 L66 150 Q58 153 50 150 Z"/>'], ["coude", '<ellipse cx="58" cy="156" rx="9" ry="7"/>'],
+    ["avantbras", '<path d="M49 160 Q58 164 67 160 L62 224 Q56 226 51 224 Z"/>'], ["poignet", '<ellipse cx="56.5" cy="228" rx="6.5" ry="4"/>']];
+  const MI = [["hanche", '<path d="M68 222 H100 V240 Q84 244 68 240 Z"/>'], ["cuisse", '<path d="M68 240 Q84 244 100 240 L96 310 Q84 314 72 310 Z"/>'], ["genou", '<ellipse cx="84" cy="318" rx="12" ry="9"/>'],
+    ["jambe", '<path d="M73 324 Q84 328 95 324 L90 386 Q84 388 78 386 Z"/>'], ["cheville", '<ellipse cx="84" cy="391" rx="7.5" ry="5"/>']];
+  const zone = (k, forme) => forme.replace(/^<(\w+)/, `<$1 class="tr-z" data-z="${k}"`);
+  function mainSvg() {
+    // main : paume en avant, pouce (doigt 1) en dehors ; phalanges P1 proximale, P2 du milieu, P3 distale
+    let s = `<rect class="tr-z tr-paume" data-z="main" data-p="métacarpes" x="49.5" y="232" width="15" height="15" rx="3.5"/>`;
+    const doigts = [[1, 47, 236, 2, 10, -22], [2, 51.2, 247, 3, 12, 0], [3, 54.6, 247, 3, 13.5, 0], [4, 58, 247, 3, 12.5, 0], [5, 61.4, 247, 3, 10, 4]];
+    doigts.forEach(([d, x, y, n, lg, rot]) => { const hp = lg / n; for (let k = 1; k <= n; k++) s += `<rect class="tr-z tr-ph" data-z="main" data-d="${d}" data-ph="${k}" x="${x - 1.5}" y="${(y + (k - 1) * hp).toFixed(2)}" width="3.1" height="${(hp - 0.3).toFixed(2)}" rx="1.2"${rot ? ` transform="rotate(${rot} ${x} ${y})"` : ""}/>`; });
+    return s;
+  }
+  function piedSvg() {
+    // pied vu de face : orteil 1 (gros orteil) en dedans
+    let s = `<path class="tr-z tr-paume" data-z="pied" data-p="métatarses" d="M77 395 Q84 393 91 395 L95 405 H74 Z"/>`;
+    [[1, 93, 3.4, 6.5, 2], [2, 89.2, 2.6, 5.5, 3], [3, 85.8, 2.5, 5, 3], [4, 82.5, 2.4, 4.5, 3], [5, 79.2, 2.3, 4, 3]].forEach(([d, x, w, lg, n]) => { const hp = lg / n; for (let k = 1; k <= n; k++) s += `<rect class="tr-z tr-ph" data-z="pied" data-d="${d}" data-ph="${k}" x="${(x - w / 2).toFixed(2)}" y="${(405 + (k - 1) * hp).toFixed(2)}" width="${w}" height="${(hp - 0.25).toFixed(2)}" rx="1"/>`; });
+    return s;
+  }
+  const membre = (l, cote, extra) => l.map(([k, f]) => zone(k, f)).join("").replace(/data-z="/g, `data-c="${cote}" data-z="`) + extra.replace(/data-z="/g, `data-c="${cote}" data-z="`);
+  // abdomen en 9 régions, de face : la colonne de gauche de l'écran est le côté droit de la victime
+  function abdoSvg() {
+    const X = [68.5, 89, 111, 131.5], Y = [136, 158, 177, 196], ord = [["1", "2", "3"], ["8", "9", "4"], ["7", "6", "5"]];
+    let s = "";
+    ord.forEach((l, r) => l.forEach((n, c) => { const q = TR.abdomen.find(a => a[0] === n); s += `<rect class="tr-z tr-abq" data-z="abdomen" data-p="${esc(q[1])}" x="${X[c]}" y="${Y[r]}" width="${X[c + 1] - X[c]}" height="${Y[r + 1] - Y[r]}"/><text class="tr-abn" x="${(X[c] + X[c + 1]) / 2}" y="${(Y[r] + Y[r + 1]) / 2 + 2.5}" text-anchor="middle">${n}</text>`; }));
+    return s;
+  }
+  function silhouette(dos) {
+    const cg = dos ? "d" : "g", cd = dos ? "g" : "d";
+    const tronc = dos
+      ? `<path class="tr-z" data-z="dos" d="M66 76 Q66 66 80 66 H120 Q134 66 134 76 L131 196 H69 Z"/>`
+      : `<path class="tr-z" data-z="thorax" d="M66 76 Q66 66 80 66 H120 Q134 66 134 76 L131.5 136 H68.5 Z"/>` + abdoSvg();
+    const ms = c => `<g transform="rotate(6 62 80)">${membre(MS, c, mainSvg())}</g>`, mi = c => membre(MI, c, piedSvg());
+    return `<svg class="tr-svg" viewBox="0 0 200 420" role="group" aria-label="Silhouette ${dos ? "de dos" : "de face"}">
+      <ellipse class="tr-z" data-z="tete" cx="100" cy="32" rx="18" ry="23"/><path class="tr-z" data-z="cou" d="M91 52 H109 L111 67 H89 Z"/>
+      ${tronc}<path class="tr-z" data-z="bassin" d="M69 196 H131 Q134 210 130 224 H70 Q66 210 69 196 Z"/>
+      <g class="tr-m" data-m="ms-${cd}">${ms(cd)}</g><g class="tr-m" data-m="ms-${cg}" transform="translate(200 0) scale(-1 1)">${ms(cg)}</g>
+      <g class="tr-m" data-m="mi-${cd}">${mi(cd)}</g><g class="tr-m" data-m="mi-${cg}" transform="translate(200 0) scale(-1 1)">${mi(cg)}</g>
+      <text class="tr-cote" x="14" y="16">${dos ? "G" : "D"}</text><text class="tr-cote" x="186" y="16" text-anchor="end">${dos ? "D" : "G"}</text>
+    </svg>`;
+  }
+  function pageTrauma() {
+    document.title = "Mémo traumato · PISU 44";
+    app.appendChild(h("div", { class: "p-tete" }, `<div class="pt-tx"><h1>Mémo traumato</h1><p class="t-src">Source : « ${esc(TR.source)} ».</p></div>`));
+    const z = h("div", { class: "contenu tr" });
+    const st = { dos: false, zone: null, cote: null, piece: null, doigt: null, ph: null, niveau: null, face: null, aspects: new Set(), comp: new Set(), prec: "" };
+    const vue = h("div", { class: "tr-vue" });
+    const outils = h("div", { class: "tr-outils" }, `<button type="button" class="tr-b tr-face" aria-pressed="false">Voir de dos</button><button type="button" class="tr-b tr-retour" hidden>← Silhouette entière</button>`);
+    const carte = h("div", { class: "tr-carte" }, `<p class="petit">Toucher une zone : le membre s'agrandit, puis toucher le morceau. La droite de la victime est à gauche de l'écran (de face).</p>`);
+    z.append(outils, vue, carte);
+    let vb = [0, 0, 200, 420], anim = null;
+    const svg = () => $(".tr-svg", vue);
+    const poserVb = v => { vb = v; svg().setAttribute("viewBox", v.map(x => x.toFixed(1)).join(" ")); };
+    const allerA = cible => {
+      cancelAnimationFrame(anim); const d0 = vb.slice(), t0 = performance.now(), dur = calme() ? 0 : 320;
+      const pas = t => { const k = dur ? Math.min(1, (t - t0) / dur) : 1, e = 1 - Math.pow(1 - k, 3); poserVb(d0.map((x, i) => x + (cible[i] - x) * e)); if (k < 1) anim = requestAnimationFrame(pas); };
+      anim = requestAnimationFrame(pas);
+    };
+    const boite = l => { const sv = svg(), inv = sv.getScreenCTM().inverse(); let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+      l.forEach(el => { const b = el.getBBox(), m = inv.multiply(el.getScreenCTM()); [[b.x, b.y], [b.x + b.width, b.y], [b.x, b.y + b.height], [b.x + b.width, b.y + b.height]].forEach(([x, y]) => { const q = new DOMPoint(x, y).matrixTransform(m); x0 = Math.min(x0, q.x); y0 = Math.min(y0, q.y); x1 = Math.max(x1, q.x); y1 = Math.max(y1, q.y); }); });
+      const w = x1 - x0, hh = y1 - y0, pad = Math.max(w, hh) * 0.1 + 2, r = 200 / 420, W = Math.max(w + 2 * pad, (hh + 2 * pad) * r), H = W / r; return [x0 + w / 2 - W / 2, y0 + hh / 2 - H / 2, W, H]; };
+    const cadre = el => boite([el]);
+    const dessiner = () => { vue.innerHTML = silhouette(st.dos); poserVb(vb); vue.classList.toggle("zoom", vb[2] < 199); };
+    const nomZone = () => { const Z = TR.zones[st.zone]; return Z.nom + (st.cote ? (st.cote === "d" ? " droit" : " gauche").replace(/ (droit|gauche)$/, m => /^(Main|Cuisse|Jambe|Cheville|Hanche|Épaule)/.test(Z.nom) ? m + "e" : m) : ""); };
+    const locTexte = () => {
+      const Z = TR.zones[st.zone]; if (!Z) return "";
+      const c = st.cote ? (st.cote === "d" ? " droit" : " gauche") : "", fem = /^(main|cuisse|jambe|cheville|hanche|epaule|tete)$/.test(st.zone);
+      const cc = c && fem ? c + "e" : c;
+      if (st.doigt) { const doigt = st.zone === "pied" ? (st.doigt === 1 ? "gros orteil" : `${st.doigt}e orteil`) : (st.doigt === 1 ? "pouce" : `${st.doigt}e doigt`); return `${st.ph ? `P${st.ph} du ` : ""}${doigt} ${DE[st.zone]}${cc}${st.face ? `, face ${st.face}` : ""}`; }
+      if (st.zone === "abdomen" && st.piece) return st.piece;
+      const parts = [st.face ? `Face ${st.face}` : "", st.niveau || ""].filter(Boolean).join(" ");
+      return `${parts ? parts + " " : ""}${parts ? DE[st.zone] : Z.nom}${parts ? "" : ""}${cc}${st.piece ? `, en regard ${enRegard(st.piece)}` : ""}`.replace(/^./, x => x.toUpperCase());
+    };
+    const enRegard = p => { const l = p.replace(/ :.*$/, "").replace(/^./, x => x.toLowerCase()); return /^(vertèbres|vraies|fausses|côtes|phalanges|métacarpes|métatarses|carpes|os (lacrymaux|nasaux)|1re)/.test(l) ? "des " + l.replace(/^1re et 12e vertèbres/, "1re et 12e vertèbres") : /^[aeiouéèêhy]/.test(l) ? "de l'" + l : /^(clavicule|scapula|omoplate|patella|malléole|crête|base|colonne|symphyse|tête|mandibule|fibula|ulna|entrée|articulation)/.test(l) ? "de la " + l : "du " + l; };
+    const texte = () => { const a = [...st.aspects], cp = [...st.comp]; return [a.length ? `Type de lésion : ${a.join(", ")}${st.prec ? ` (${st.prec})` : ""}` : st.prec ? `Type de lésion : ${st.prec}` : "", `Localisation : ${locTexte()}`, cp.length ? `Complication : ${cp.join(", ")}` : ""].filter(Boolean).join(". ") + "."; };
+    const chips = (l, set, cls) => l.map(x => `<button type="button" class="tr-chip ${cls}" aria-pressed="${set.has(x)}">${esc(x)}</button>`).join("");
+    function majCarte() {
+      const Z = TR.zones[st.zone];
+      if (!Z) { carte.innerHTML = `<p class="petit">Toucher une zone : le membre s'agrandit, puis toucher le morceau. ${st.dos ? "De dos, la droite de la victime est à droite de l'écran." : "De face, la droite de la victime est à gauche de l'écran."}</p>`; return; }
+      const faces = Z.faces || ["antérieure", "postérieure"];
+      let t = `<h2>${esc(nomZone())}${st.doigt ? ` · ${st.zone === "pied" ? "orteil" : "doigt"} ${st.doigt}${st.ph ? ` · P${st.ph}` : ""}` : ""}</h2>`;
+      if (st.doigt) t += `<p class="petit">Phalange proximale n°1, du milieu n°2, distale n°3 (sens de la position anatomique). Doigt 1 = ${st.zone === "pied" ? "gros orteil" : "pouce"}.</p>`;
+      if (Z.abdomen) t += `<div class="tr-abdo">${TR.abdomen.map(([n, nom, org]) => `<button type="button" class="tr-q" aria-pressed="${st.piece === nom}"><b>${n}</b>${esc(nom)}${org ? `<small>${esc(org)}</small>` : ""}</button>`).join("")}</div><p class="petit">Les 9 régions telles que vues de face. Organes repérés sur la figure du mémo.</p>`;
+      if (Z.os) t += `<h3>Repères osseux</h3><div class="tr-os">${Z.os.map(o => `<button type="button" class="tr-chip tr-o" aria-pressed="${st.piece === o}">${esc(o)}</button>`).join("")}</div>`;
+      if (Z.rachis) t += `<table class="memo-t kv"><tbody>${TR.rachis.map(([n, f]) => `<tr><th>${esc(n)}</th><td>${esc(f)}</td></tr>`).join("")}</tbody></table>`;
+      if (Z.long) t += `<h3>Niveau</h3><div class="tr-os">${["Tiers proximal", "Tiers moyen", "Tiers distal"].map(n => `<button type="button" class="tr-chip tr-n" aria-pressed="${st.niveau === n.toLowerCase()}">${n}</button>`).join("")}</div><p class="petit">Os long : épiphyse, métaphyse, diaphyse, métaphyse, épiphyse.</p>`;
+      if (!Z.abdomen && !Z.rachis) t += `<h3>Face</h3><div class="tr-os">${faces.map(f => `<button type="button" class="tr-chip tr-f" aria-pressed="${st.face === f}">${f}</button>`).join("")}</div>`;
+      t += `<details class="tr-dec"${st.aspects.size || st.comp.size ? " open" : ""}><summary>Décrire la lésion</summary><h3>Aspect</h3><div class="tr-os">${chips(TR.aspects, st.aspects, "tr-a")}</div><label class="tr-prec">Précision (taille, nombre, sens)<input type="text" value="${esc(st.prec)}" placeholder="ex. 7 à 8 cm, horizontale"></label><h3>Complications loco-régionales</h3><div class="tr-os">${chips(TR.complications, st.comp, "tr-k")}</div></details>`;
+      t += `<div class="tr-phrase" aria-live="polite">${esc(texte())}</div><div class="tr-act"><button type="button" class="tr-b tr-noter">Noter au journal</button><button type="button" class="tr-b tr-copier">Copier</button></div>`;
+      t += `<p class="petit">Figure : <a href="#tr-fig-${Z.fig}">page ${Z.fig} du mémo</a>.</p>`;
+      carte.innerHTML = t;
+    }
+    carte.addEventListener("click", e => {
+      const b = e.target.closest("button"); if (!b) return;
+      const v = b.textContent.trim(), on = b.getAttribute("aria-pressed") !== "true";
+      if (b.classList.contains("tr-o")) st.piece = on ? v : null;
+      else if (b.classList.contains("tr-q")) { st.piece = on ? $("b", b).nextSibling.textContent : null; vue.querySelectorAll(".tr-abq").forEach(x => x.classList.toggle("sel", x.dataset.p === st.piece)); }
+      else if (b.classList.contains("tr-n")) st.niveau = on ? v.toLowerCase() : null;
+      else if (b.classList.contains("tr-f")) st.face = on ? v : null;
+      else if (b.classList.contains("tr-a")) on ? st.aspects.add(v) : st.aspects.delete(v);
+      else if (b.classList.contains("tr-k")) on ? st.comp.add(v) : st.comp.delete(v);
+      else if (b.classList.contains("tr-noter")) { noter("trauma", st.zone, null, texte()); toast("Noté au journal"); return; }
+      else if (b.classList.contains("tr-copier")) { navigator.clipboard?.writeText(texte()).then(() => toast("Copié"), () => {}); return; }
+      else return;
+      const y = window.scrollY; majCarte(); window.scrollTo(0, y);
+    });
+    carte.addEventListener("input", e => { if (e.target.matches(".tr-prec input")) { st.prec = e.target.value; $(".tr-phrase", carte).textContent = texte(); } });
+    vue.addEventListener("click", e => {
+      const p = e.target.closest(".tr-z"); if (!p) return;
+      const m = p.closest("g.tr-m"), zoomMembre = m && vb[2] > 120, zoomMain = m && (p.dataset.z === "main" || p.dataset.z === "pied") && vb[2] > 40;
+      if (zoomMembre) { allerA(cadre(m)); }
+      else if (zoomMain) allerA(boite([...m.querySelectorAll(`[data-z="${p.dataset.z}"]`)]));
+      else if (!m) allerA(p.dataset.z === "abdomen" ? boite([...vue.querySelectorAll('[data-z="abdomen"]')]) : cadre(p));
+      Object.assign(st, { zone: p.dataset.z, cote: p.dataset.c || null, piece: p.dataset.p ? p.dataset.p.charAt(0).toUpperCase() + p.dataset.p.slice(1) : null, doigt: p.dataset.d ? +p.dataset.d : null, ph: p.dataset.ph ? +p.dataset.ph : null, niveau: null });
+      if (TR.zones[st.zone].faces && !TR.zones[st.zone].faces.includes(st.face)) st.face = null;
+      if (st.dos && !TR.zones[st.zone].faces && !TR.zones[st.zone].rachis) st.face = "postérieure";
+      if (!TR.zones[st.zone].faces && /palmaire|dorsale|plantaire/.test(st.face || "")) st.face = null;
+      vue.querySelectorAll(".tr-z.sel").forEach(x => x.classList.remove("sel"));
+      vue.querySelectorAll(`.tr-z[data-z="${st.zone}"]${st.cote ? `[data-c="${st.cote}"]` : ""}${st.doigt ? `[data-d="${st.doigt}"]` : ""}${st.ph ? `[data-ph="${st.ph}"]` : ""}${st.zone === "abdomen" && st.piece ? `[data-p="${st.piece}"]` : ""}`).forEach(x => x.classList.add("sel"));
+      $(".tr-retour", outils).hidden = false; vue.classList.add("zoom");
+      majCarte();
+    });
+    $(".tr-retour", outils).onclick = () => { allerA([0, 0, 200, 420]); $(".tr-retour", outils).hidden = true; vue.classList.remove("zoom"); };
+    $(".tr-face", outils).onclick = e => { st.dos = !st.dos; e.currentTarget.setAttribute("aria-pressed", String(st.dos)); e.currentTarget.textContent = st.dos ? "Voir de face" : "Voir de dos"; vb = [0, 0, 200, 420]; $(".tr-retour", outils).hidden = true; Object.assign(st, { zone: null, cote: null, piece: null, doigt: null, ph: null }); dessiner(); majCarte(); };
+    dessiner(); majCarte();
+    // références du mémo, repliées
+    const ref = (titre, html) => `<details class="tr-ref"><summary>${titre}</summary>${html}</details>`;
+    z.insertAdjacentHTML("beforeend", `<h2 class="tr-h">Le mémo</h2>`
+      + ref("Ce que je vois à l'abordage", `<ul>${TR.abordage.map(x => `<li>${esc(x)}</li>`).join("")}</ul><h3>Ce que la victime décrit</h3><ul>${TR.decrit.map(x => `<li>${esc(x)}</li>`).join("")}</ul><h3>Localisation précise</h3><ul><li>Os / région de l'os / côté</li><li>Proximal / distal</li><li>Face palmaire / dorsale / plantaire / cou de pied</li><li>Numéro de phalange (sens de la position anatomique)</li></ul>`)
+      + ref("Repères dans l'espace", `<table class="memo-t kv"><tbody>${TR.reperes.map(([a, b]) => `<tr><th>${esc(a)}</th><td>${esc(b)}</td></tr>`).join("")}</tbody></table><p class="petit">Trois plans : frontal, sagittal, transversal. Trois axes : longitudinal, antéro-postérieur, transversal. Os long (${esc(TR.os_long.os)}) : ${TR.os_long.parties.join(", ").toLowerCase()}.</p>`)
+      + ref("Les mouvements", `<table class="memo-t"><thead><tr><th>Mouvement</th><th>Contraire</th><th>Où</th></tr></thead><tbody>${TR.mouvements.map(([a, da, b, db, ou]) => `<tr><td><b>${esc(a)}</b><br><small>${esc(da)}</small></td><td><b>${esc(b)}</b><br><small>${esc(db)}</small></td><td><small>${esc(ou)}</small></td></tr>`).join("")}</tbody></table>`)
+      + ref("Les mécanismes", `<table class="memo-t"><thead><tr><th>Mécanisme</th><th>Définition</th><th>Exemple</th></tr></thead><tbody>${TR.mecanismes.map(([a, b, c]) => `<tr><th>${esc(a)}</th><td>${esc(b)}</td><td>${esc(c)}</td></tr>`).join("")}</tbody></table>`)
+      + ref("Rachis : niveaux et fonctions", `<table class="memo-t kv"><tbody>${TR.rachis.map(([a, b]) => `<tr><th>${esc(a)}</th><td>${esc(b)}</td></tr>`).join("")}</tbody></table><h3>Repères</h3><table class="memo-t kv"><tbody>${TR.rachis_reperes.map(([a, b]) => `<tr><th>${esc(a)}</th><td>${esc(b)}</td></tr>`).join("")}</tbody></table>`)
+      + ref("Abdomen : 9 régions", `<div class="tr-abdo fixe">${TR.abdomen.map(([n, nom, org]) => `<div class="tr-q"><b>${n}</b>${esc(nom)}${org ? `<small>${esc(org)}</small>` : ""}</div>`).join("")}</div>`)
+      + ref("Exemples descriptifs", TR.exemples.map(x => `<div class="memo"><h3>${esc(x.qui)}</h3><table class="memo-t kv"><tbody><tr><th>Type</th><td>${esc(x.type)}</td></tr><tr><th>Localisation</th><td>${esc(x.loc)}</td></tr><tr><th>Complication</th><td>${esc(x.comp)}</td></tr></tbody></table></div>`).join(""))
+      + ref("Figures du mémo", `<div class="t-pages">${TR.figures.map(([f, t, p]) => `<figure class="t-page" id="tr-fig-${p}"><img src="trauma/${f}" alt="Mémo traumato page ${p} : ${esc(t)}" loading="lazy" decoding="async"><figcaption>Page ${p} · ${esc(t)} · toucher pour agrandir</figcaption></figure>`).join("")}</div>`));
+    z.addEventListener("click", e => { const a = e.target.closest('a[href^="#tr-fig-"]'); if (!a) return; e.preventDefault(); const f = document.getElementById(a.getAttribute("href").slice(1)); f.closest("details").open = true; f.scrollIntoView({ behavior: "smooth", block: "start" }); });
+    app.appendChild(z);
+  }
   // ------------------------------------------------------------- aide-mémoire : court, sourcé, le PISU prime
   const faible = n => /faible|pédagog/i.test(n || "");
   // un mémo se lit en tableau : tableau donné, ou lignes « clé : valeur » (XABCDE, 4H-4T, grades…) en deux colonnes
@@ -851,7 +994,7 @@
     app.appendChild(h("div", { class: "contenu accueil" }, `<h1 class="h-rub">Plus</h1>`
       + `<section class="bloc"><h2>Médicaments</h2><a class="ligne" href="#/medicaments"><span class="code med">M</span><span>Les ${Object.keys(M).length} fiches médicaments</span></a></section>`
       + `<section class="bloc"><h2>Scores</h2>${Object.entries(SCORES).map(([k, S]) => `<a class="ligne" href="#/score/${k}"><span>${esc(S.titre)}</span></a>`).join("")}</section>`
-      + ((window.PISU_MEMOS?.general || []).length ? `<section class="bloc"><h2>Aide-mémoire</h2>${PISU_MEMOS.general.map(m => `<a class="ligne" href="#/memo/${m.id}"><span>${esc(m.titre)}</span></a>`).join("")}</section>` : "")
+      + `<section class="bloc"><h2>Aide-mémoire</h2>${window.PISU_TRAUMA ? `<a class="ligne" href="#/trauma"><span>Mémo traumato <small>silhouette, décrire une lésion</small></span></a>` : ""}${(window.PISU_MEMOS?.general || []).map(m => `<a class="ligne" href="#/memo/${m.id}"><span>${esc(m.titre)}</span></a>`).join("")}</section>`
       + (C && C.fiches.length ? `<section class="bloc"><h2>Gestes infirmiers de base</h2>${C.fiches.map(f => `<a class="ligne" href="#/c/${f.id}"><span>${esc(f.titre)}</span></a>`).join("")}<a class="ligne" href="#/c/cadre"><span>Le cadre infirmier en 2026</span></a></section>` : "")
       + `<section class="bloc"><h2>Généralités et annexes</h2>${gens.map(c => `<a class="ligne" href="#/p/${c}"><span>${esc(P[c].titre)}</span></a>`).join("")}</section>`
       + (installe() ? "" : `<section class="bloc"><h2>Sur l'écran d'accueil</h2><p class="petit">Le carnet s'installe comme une application, sans store, et marche sans réseau : tout est téléchargé à la première ouverture. Pour mettre à jour, tirer la page vers le bas avec du réseau. iPhone : Safari, bouton Partager, « Sur l'écran d'accueil ». Android : Chrome, menu ⋮, « Installer l'application ».</p><button class="ligne b-inst" type="button" hidden><span>Installer PISU 44 sur cet appareil</span></button></section>`)));
@@ -1133,7 +1276,7 @@
     const l = INT.evts.slice().reverse();
     app.appendChild(h("div", { class: "contenu" }, `<h1 class="h-rub">Journal de l'intervention</h1>`
       + (INT.debut ? `<p class="petit">Début : ${heure(INT.debut)}${vic.poids != null ? ` · ${nb(vic.poids)} kg` : ""}${vic.age != null ? ` · ${nb(vic.age)} ans` : ""}. Gardé sur ce téléphone seulement, effacé après 6 h ou par « Nouvelle victime ».</p>` : `<p class="petit">Aucune intervention en cours.</p>`)
-      + (l.length ? `<ol class="journal">${l.map(e => `<li><b>${heure(e.t)}</b> ${e.code === "score" ? `<a href="#/score/${esc(e.id)}">score</a>` : `<a href="#/p/${esc(e.code)}/logi/${esc(e.id)}"><span class="code ${classeCode(e.code)}">${esc(e.code)}</span></a>`} ${esc(e.txt)}</li>`).join("")}</ol>` : "")
+      + (l.length ? `<ol class="journal">${l.map(e => `<li><b>${heure(e.t)}</b> ${e.code === "trauma" ? `<a href="#/trauma">trauma</a>` : e.code === "score" ? `<a href="#/score/${esc(e.id)}">score</a>` : `<a href="#/p/${esc(e.code)}/logi/${esc(e.id)}"><span class="code ${classeCode(e.code)}">${esc(e.code)}</span></a>`} ${esc(e.txt)}</li>`).join("")}</ol>` : "")
       + (enCours() ? `<button type="button" class="ligne j-raz"><span>Nouvelle victime : tout effacer</span></button>` : "")));
     const rz = $(".j-raz", app); if (rz) rz.onclick = () => { if (!rz.classList.contains("sur")) { rz.classList.add("sur"); $("span", rz).textContent = "Toucher encore pour tout effacer"; return; } nouvelleIntervention(); route(); };
   }
@@ -1151,7 +1294,7 @@
     if (/^#\/(med\/|medicaments)/.test(r)) return "plus";
     if (r === "#/sso") return "sso";
     if (/^#\/(t\/|techniques)/.test(r)) return "techniques";
-    if (/^#\/(plus|reste|c\/|confirmer|memo|journal|score)/.test(r)) return "plus";
+    if (/^#\/(plus|reste|c\/|confirmer|memo|journal|score|trauma)/.test(r)) return "plus";
     const m = r.match(/^#\/p\/([^/]+)/);
     if (m && /SSO$/.test(m[1])) return "sso";
     if (m && estGen(m[1])) return "plus";
@@ -1172,6 +1315,7 @@
     else if ((m = r.match(/^#\/c\/([a-z0-9-]+)$/)) && window.PISU_COMP && (m[1] === "cadre" || PISU_COMP.fiches.some(f => f.id === m[1]))) pageComp(m[1]);
     else if (r === "#/confirmer") pageConfirmer();
     else if (r === "#/journal") pageJournal();
+    else if (r === "#/trauma" && TR) pageTrauma();
     else if ((m = r.match(/^#\/score\/([a-z]+)$/)) && SCORES[m[1]]) pageScore(m[1]);
     else if ((m = r.match(/^#\/memo\/([a-z0-9-]+)$/)) && (window.PISU_MEMOS?.general || []).some(x => x.id === m[1])) pageMemo(m[1]);
     else if (r === "#/medicaments") pageMedicaments();
