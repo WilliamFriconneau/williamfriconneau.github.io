@@ -716,7 +716,12 @@
     const bi = bandeauInstall(); if (bi) app.appendChild(bi);
     app.appendChild(h("div", { class: "contenu accueil" }, blocRecents()));
     app.appendChild(seg);
-    app.appendChild(h("div", { class: "contenu accueil" }, `<section class="bloc">${listeProtos(pub === "enfants" ? "E" : "A")}</section>`));
+    app.appendChild(h("div", { class: "contenu accueil" }, `<section class="bloc">${listeProtos(pub === "enfants" ? "E" : "A")}</section>`
+      + `<section class="bloc"><h2>Actes de télémédecine</h2>${PROTO_AT.filter(c => P[c]).map(lienCode).join("")}</section>`));
+  }
+  function pageSSO() {
+    document.title = "SSO · PISU 44";
+    app.appendChild(h("div", { class: "contenu accueil" }, `<h1 class="h-rub">Soutien sanitaire opérationnel</h1><section class="bloc">${PROTO_SSO.filter(c => P[c]).map(lienCode).join("")}</section>`));
   }
   function pageMedicaments() {
     document.title = "Médicaments · PISU 44";
@@ -753,10 +758,85 @@
     }
     app.appendChild(z);
   }
+  // ------------------------------------------------------------- scores : les tableaux du carnet, un toucher par ligne, total en direct
+  // rien d'ajouté au carnet : mêmes libellés, mêmes points ; pas de seuil d'interprétation, le carnet n'en donne pas
+  const SCORES = {
+    glasgow: { titre: "Score de Glasgow", court: "Glasgow", min: 3, max: 15, src: "Carnet PISU 2024, annexe « Bilan secondaire ABCDE »", page: "ANNEXE-bilan-secondaire-glasgow",
+      crit: [
+        { id: "Y", lab: "Ouverture des yeux (Y)", ch: [[4, "Spontanée"], [3, "À la demande"], [2, "À la douleur"], [1, "Aucune"]] },
+        { id: "V", lab: "Réponse verbale (V)", ch: [[5, "Orientée"], [4, "Confuse"], [3, "Paroles inappropriées"], [2, "Sons incompréhensibles"], [1, "Aucune"]] },
+        { id: "M", lab: "Réponse motrice (M)", ch: [[6, "Obéit aux ordres simples"], [5, "Adaptée, localise la douleur"], [4, "Retrait à la douleur"], [3, "Flexion anormale (décortication)"], [2, "Extension anormale (décérébration)"], [1, "Aucune"]] },
+      ], detail: v => `Y${v.Y ?? "?"} V${v.V ?? "?"} M${v.M ?? "?"}` },
+    malinas: { titre: "Score de Malinas", court: "Malinas", min: 0, max: 10, src: "Carnet PISU 2024, annexe p. 16", page: "ANNEXE-constantes-apgar-malinas", errata: "Annexe Malinas",
+      crit: [
+        { id: "par", lab: "Parité (nombre de grossesses antérieures)", ch: [[0, "Une"], [1, "Deux"], [2, "Trois et plus"]] },
+        { id: "tra", lab: "Durée du travail", ch: [[0, "≤ 3 h"], [1, "Entre 3 et 5 h"], [2, "≥ 6 h"]] },
+        { id: "dur", lab: "Durée des contractions", ch: [[0, "≤ 1 min"], [1, "1 min"], [2, "≥ 1 min"]] },
+        { id: "int", lab: "Intervalle entre les contractions", ch: [[0, "≥ 5 min"], [1, "Entre 3 et 5 min"], [2, "≤ 3 min (au moins 2 en 5 minutes)"]] },
+        { id: "eau", lab: "Perte des eaux", ch: [[0, "Non"], [1, "Récente (≤ 1 h)"], [2, "≥ 1 h"]] },
+      ] },
+    apgar: { titre: "Score d'Apgar", court: "Apgar", min: 0, max: 10, src: "Carnet PISU 2024, annexe p. 16", page: "ANNEXE-constantes-apgar-malinas", errata: "Annexe Apgar", heure: true,
+      crit: [
+        { id: "fc", lab: "Fréquence cardiaque", ch: [[0, "Absente"], [1, "≤ 100"], [2, "≥ 100"]] },
+        { id: "res", lab: "Respiration", ch: [[0, "Absente"], [1, "Irrégulière"], [2, "Efficace"]] },
+        { id: "ton", lab: "Tonus", ch: [[0, "Hypotonie globale"], [1, "Flexion des membres"], [2, "Mouvements actifs"]] },
+        { id: "rea", lab: "Réactivité à la stimulation", ch: [[0, "Aucune"], [1, "Grimace"], [2, "Vive"]] },
+        { id: "col", lab: "Coloration", ch: [[0, "Cyanosé ou gris"], [1, "Acrocyanose"], [2, "Rose"]] },
+      ] },
+    wallace: { titre: "Règle de Wallace (adulte)", court: "Wallace", src: "Carnet PISU 2024, protocole 6A", page: "6A", unite: " %",
+      zones: [["tete", "Tête et cou (antérieur + postérieur)", 9], ["tronc", "Poitrine et abdomen", 18], ["dos", "Dos", 18], ["mig", "Membre inférieur gauche", 18], ["mid", "Membre inférieur droit", 18], ["msg", "Membre supérieur gauche", 9], ["msd", "Membre supérieur droit", 9], ["oge", "Organes génitaux externes", 1]] },
+  };
+  const SC_LIENS = { "ANNEXE-bilan-secondaire-glasgow": ["glasgow"], "ANNEXE-constantes-apgar-malinas": ["apgar", "malinas"], "6A": ["wallace"] };
+  const errataLigne = cle => { const E = window.PISU_ERRATA; const l = [].concat(...Object.values(E || {}).filter(Array.isArray)); return l.find(e => e && e.ou && e.ou.startsWith(cle))?.constat; };
+  function pageScore(id) {
+    const S = SCORES[id], v = {}, mains = { n: 0 };
+    document.title = `${S.titre} · PISU 44`;
+    app.appendChild(h("div", { class: "p-tete" }, `<div class="pt-tx"><h1>${esc(S.titre)}</h1></div>`));
+    const z = h("div", { class: "contenu sc" });
+    const tot = h("div", { class: "sc-tot", role: "status", "aria-live": "polite" });
+    z.appendChild(tot);
+    const total = () => S.zones ? S.zones.reduce((s, [k, , p]) => s + (v[k] ? p : 0), 0) + mains.n : S.crit.every(c => v[c.id] != null) ? S.crit.reduce((s, c) => s + v[c.id], 0) : null;
+    const texte = () => { const t = total(); if (S.zones) return `${S.court} : ${t} %`; return `${S.court} ${t ?? "?"}${S.max != null ? "/" + S.max : ""}${S.detail ? ` (${S.detail(v)})` : ""}`; };
+    const maj = () => { const t = total(), manque = S.crit ? S.crit.filter(c => v[c.id] == null).length : 0;
+      tot.innerHTML = `<b>${t ?? "?"}${S.unite || ""}</b><span>${S.detail ? esc(S.detail(v)) : S.zones ? "surface brûlée" : manque ? `encore ${manque} ligne${manque > 1 ? "s" : ""}` : "sur " + S.max}</span><button type="button" class="sc-noter"${t == null ? " disabled" : ""}>Noter${S.heure ? " l'heure" : ""}</button>`;
+      $(".sc-noter", tot).onclick = () => { noter("score", id, null, texte()); toast(`Noté : ${texte()}`); };
+    };
+    if (S.crit) S.crit.forEach(c => {
+      const f = h("fieldset", { class: "sc-c" }, `<legend>${esc(c.lab)}</legend>` + c.ch.map(([p, l]) => `<button type="button" class="sc-b" data-p="${p}" aria-pressed="false"><span>${esc(l)}</span><b>${p}</b></button>`).join(""));
+      f.addEventListener("click", e => { const b = e.target.closest(".sc-b"); if (!b) return; const p = +b.dataset.p; v[c.id] = v[c.id] === p ? null : p; f.querySelectorAll(".sc-b").forEach(x => x.setAttribute("aria-pressed", String(+x.dataset.p === v[c.id]))); maj(); });
+      z.appendChild(f);
+    });
+    else {
+      const f = h("fieldset", { class: "sc-c" }, `<legend>Zones brûlées (2e et 3e degré)</legend>` + S.zones.map(([k, l, p]) => `<button type="button" class="sc-b" data-k="${k}" aria-pressed="false"><span>${esc(l)}</span><b>${p} %</b></button>`).join("")
+        + `<div class="sc-mains"><span>Une main = 1 %</span><button type="button" class="sc-m" aria-label="Une main de moins">−</button><output>0</output><button type="button" class="sc-p" aria-label="Une main de plus">+</button></div>`);
+      f.addEventListener("click", e => { const b = e.target.closest(".sc-b"); if (b) { v[b.dataset.k] = !v[b.dataset.k]; b.setAttribute("aria-pressed", String(v[b.dataset.k])); maj(); }
+        if (e.target.closest(".sc-m")) mains.n = Math.max(0, mains.n - 1); if (e.target.closest(".sc-p")) mains.n = Math.min(99, mains.n + 1); $("output", f).textContent = mains.n; maj(); });
+      z.appendChild(f);
+    }
+    const er = S.errata && errataLigne(S.errata);
+    z.appendChild(h("p", { class: "petit sc-src" }, `Source : <a href="#/p/${S.page}">${esc(S.src)}</a>. Recopié tel quel, sans seuil d'interprétation : le carnet n'en donne pas.${er ? `<br>Écart relevé dans le carnet : ${esc(er)}` : ""}`));
+    app.appendChild(z); maj();
+  }
   // ------------------------------------------------------------- aide-mémoire : court, sourcé, le PISU prime
   const faible = n => /faible|pédagog/i.test(n || "");
+  // un mémo se lit en tableau : tableau donné, ou lignes « clé : valeur » (XABCDE, 4H-4T, grades…) en deux colonnes
+  function corpsMemo(m) {
+    let t = "";
+    if (m.tableau) t += `<table class="memo-t"><thead><tr>${m.tableau.entetes.map(x => `<th>${esc(x)}</th>`).join("")}</tr></thead><tbody>${m.tableau.lignes.map(r => `<tr>${r.map((x, i) => i ? `<td>${esc(x) || "—"}</td>` : `<th>${esc(x)}</th>`).join("")}</tr>`).join("")}</tbody></table>`;
+    const kv = m.lignes.map(x => /^([^:]{1,22}?) : (.+)$/.exec(x));
+    if (!m.tableau && kv.filter(Boolean).length >= Math.max(2, m.lignes.length * 0.6))
+      t += `<table class="memo-t kv"><tbody>${m.lignes.map((x, i) => kv[i] ? `<tr><th>${esc(kv[i][1])}</th><td>${esc(kv[i][2])}</td></tr>` : `<tr><td colspan="2">${esc(x)}</td></tr>`).join("")}</tbody></table>`;
+    else if (m.lignes.length) t += `<ul>${m.lignes.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
+    return t;
+  }
+  const srcMemo = m => `<details class="memo-src"><summary>Source${m.sources.length > 1 ? "s" : ""}${m.sources.some(x => faible(x.niveau)) ? ' <span class="memo-faible">niveau faible</span>' : ""}</summary><ul>${m.sources.map(x => `<li><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.titre)}</a><small>${[x.editeur, x.niveau, x.date].filter(Boolean).map(esc).join(" · ")}</small></li>`).join("")}</ul></details>`;
   function blocMemos(l) {
-    return h("div", { class: "memos" }, `<p class="memo-avt">Aide-mémoire. <b>Le PISU prime</b> en cas de différence.</p>` + l.map(m => `<section class="memo"><h3>${esc(m.titre)}</h3><ul>${m.lignes.map(x => `<li>${esc(x)}</li>`).join("")}</ul><details class="memo-src"><summary>Source${m.sources.length > 1 ? "s" : ""}${m.sources.some(x => faible(x.niveau)) ? ' <span class="memo-faible">niveau faible</span>' : ""}</summary><ul>${m.sources.map(x => `<li><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.titre)}</a><small>${[x.editeur, x.niveau, x.date].filter(Boolean).map(esc).join(" · ")}</small></li>`).join("")}</ul></details></section>`).join(""));
+    return h("div", { class: "memos" }, `<p class="memo-avt">Aide-mémoire. <b>Le PISU prime</b> en cas de différence.</p>` + l.map(m => `<section class="memo"><h3>${esc(m.titre)}</h3>${corpsMemo(m)}${srcMemo(m)}</section>`).join(""));
+  }
+  // dans le logigramme : fermé au repos, un toucher sur ⓘ l'ouvre
+  function memosLogi(l) {
+    const d = h("details", { class: "lg-memo" }, `<summary><span class="lg-memo-i" aria-hidden="true">i</span>Aide-mémoire <small>${l.map(m => esc(m.titre.replace(/\s*\(.*?\)\s*$/, ""))).join(" · ")}</small></summary>`);
+    d.appendChild(blocMemos(l)); return d;
   }
   function pageMemo(id) {
     const m = (window.PISU_MEMOS?.general || []).find(x => x.id === id);
@@ -769,8 +849,8 @@
     const gens = [...ORDRE_GEN.filter(c => P[c]), ...Object.keys(P).filter(c => estGen(c) && !ORDRE_GEN.includes(c))];
     const C = window.PISU_COMP;
     app.appendChild(h("div", { class: "contenu accueil" }, `<h1 class="h-rub">Plus</h1>`
-      + `<section class="bloc"><h2>Soutien sanitaire opérationnel</h2>${PROTO_SSO.filter(c => P[c]).map(lienCode).join("")}</section>`
-      + `<section class="bloc"><h2>Actes de télémédecine</h2>${PROTO_AT.filter(c => P[c]).map(lienCode).join("")}</section>`
+      + `<section class="bloc"><h2>Médicaments</h2><a class="ligne" href="#/medicaments"><span class="code med">M</span><span>Les ${Object.keys(M).length} fiches médicaments</span></a></section>`
+      + `<section class="bloc"><h2>Scores</h2>${Object.entries(SCORES).map(([k, S]) => `<a class="ligne" href="#/score/${k}"><span>${esc(S.titre)}</span></a>`).join("")}</section>`
       + ((window.PISU_MEMOS?.general || []).length ? `<section class="bloc"><h2>Aide-mémoire</h2>${PISU_MEMOS.general.map(m => `<a class="ligne" href="#/memo/${m.id}"><span>${esc(m.titre)}</span></a>`).join("")}</section>` : "")
       + (C && C.fiches.length ? `<section class="bloc"><h2>Gestes infirmiers de base</h2>${C.fiches.map(f => `<a class="ligne" href="#/c/${f.id}"><span>${esc(f.titre)}</span></a>`).join("")}<a class="ligne" href="#/c/cadre"><span>Le cadre infirmier en 2026</span></a></section>` : "")
       + `<section class="bloc"><h2>Généralités et annexes</h2>${gens.map(c => `<a class="ligne" href="#/p/${c}"><span>${esc(P[c].titre)}</span></a>`).join("")}</section>`
@@ -796,14 +876,16 @@
     const tete = h("div", { class: "p-tete" }, `<div class="pt-tx"><h1>${estGen(code) ? "" : `${picto(code)}<span class="code ${classeCode(code)}">${code}</span>`}${esc(p.titre)}</h1>${p.ecartTitre ? `<p>${ecartHtml(p.ecartTitre)}</p>` : ""}</div>`);
     const autre = paire(code);
     if (autre && P[autre]) tete.appendChild(h("a", { class: "b ae-b", href: `#/p/${autre}/${partie || "logi"}`, "aria-label": `Même protocole pour ${/E$/.test(autre) ? "l'enfant" : "l'adulte"}` }, `${autre} ⇄`));
+    if (SC_LIENS[code]) tete.appendChild(h("div", { class: "sc-liens" }, SC_LIENS[code].map(k => `<a class="b" href="#/score/${k}">Calculer ${esc(SCORES[k].court)}</a>`).join("")));
     app.appendChild(tete);
     const { inc, cor } = errataPour(code);
     const liste = [];
-    if (p.logi) liste.push({ id: "logi", titre: "Logigramme", rendre: z => z.appendChild(logigramme(code, p.logi)) });
+    const memos = window.PISU_MEMOS?.par_pisu?.[code] || [];
+    if (p.logi) liste.push({ id: "logi", titre: "Logigramme", rendre: z => { if (memos.length) z.appendChild(memosLogi(memos)); z.appendChild(logigramme(code, p.logi)); } });
     if (p.fiche) liste.push({ id: "fiche", titre: /AT$/.test(code) ? "Texte" : estGen(code) ? "Texte" : "Fiche", rendre: z => z.appendChild(fiche(p.fiche)) });
     if (p.protocole) liste.push({ id: "protocole", titre: "Protocole", rendre: z => z.appendChild(fiche(p.protocole)) });
-    const memos = window.PISU_MEMOS?.par_pisu?.[code] || [];
-    if (memos.length) liste.push({ id: "memo", titre: "Mémo", rendre: z => z.appendChild(blocMemos(memos)) });
+    // sans logigramme (AT, SSO), l'aide-mémoire garde son onglet
+    if (memos.length && !p.logi) liste.push({ id: "memo", titre: "Mémo", rendre: z => z.appendChild(blocMemos(memos)) });
     // « À confirmer » n'apparaît plus dans les protocoles : on y accède par le menu caché de « Plus »
     if (partie === "confirmer" && (inc.length || cor.length)) liste.push({ id: "confirmer", titre: `À confirmer <small>${inc.length + cor.length}</small>`, rendre: z => z.appendChild(blocConfirmer(code)) });
     if (!liste.length) { app.appendChild(h("p", { class: "vide" }, "Page vide.")); return; }
@@ -978,12 +1060,41 @@
       inp.addEventListener("blur", () => b.classList.remove("tape"));
       barre.appendChild(b);
     });
+    const bc = h("button", { type: "button", class: "vp-cst", "aria-label": "Constantes pour cet âge", "aria-expanded": "false", hidden: "" }, `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg>`);
+    bc.onclick = () => { cstOuvert = !cstOuvert; try { sessionStorage.setItem("pisu44-cst", cstOuvert ? "1" : ""); } catch (e) {} majCst(); };
+    barre.appendChild(bc);
     const raz = h("button", { type: "button", class: "vp-raz", "aria-label": "Nouvelle victime" }, "↺");
     raz.onclick = () => { if (!raz.classList.contains("sur")) { raz.classList.add("sur"); raz.textContent = "Effacer ?"; setTimeout(() => { raz.classList.remove("sur"); raz.textContent = "↺"; }, 3000); return; } raz.classList.remove("sur"); raz.textContent = "↺"; nouvelleIntervention(); garderVic(); };
     barre.appendChild(raz);
   }
+  // ------------------------------------------------------------- raccourci « constantes » pour l'âge saisi : tableaux du carnet, ligne de la victime en avant
+  // annexe « Constantes vitales pédiatriques » (< 15 ans) et annexe « Bilan secondaire ABCDE » (adulte : pas de PAS dans le carnet)
+  const CST_E = [["Nouveau-né < 7 jours", "30-60", "100-160", () => "50 à 60"], ["Nourrisson 7 j à 1 an", "25-40", "90-120", () => "70 à 80"],
+    ["Enfant 1 à 7 ans", "20-30", "90-120", a => `70 + 2 × ${a} = ${70 + 2 * a}`], ["Enfant 7 à 10 ans", "18-25", "75-100", a => `70 + 2 × ${a} = ${70 + 2 * a}`], ["Enfant > 10 ans", "15-20", "75-100", () => "90 à 110"]];
+  const ligneCst = a => a < 1 ? [0, 1] : a < 7 ? [2] : a === 7 ? [2, 3] : a <= 10 ? [3] : a < 15 ? [4] : [];
+  let cstOuvert = (() => { try { return sessionStorage.getItem("pisu44-cst") === "1"; } catch (e) { return false; } })();
+  const cst = h("aside", { class: "cst", hidden: "", "aria-label": "Constantes pour cet âge" });
+  document.body.appendChild(cst);
+  // bornes d'âge écrites dans le titre des protocoles enfant (« ≥ 3 ans et < 15 ans »)
+  const horsAge = a => Object.keys(P).filter(c => /^[1-9]E$/.test(c)).filter(c => { const m = /≥\s*(\d+)\s*ans?/.exec(P[c].titre); return m && a < +m[1]; }).map(c => `<a href="#/p/${c}"><span class="code e">${c}</span></a> à partir de ${/≥\s*(\d+)/.exec(P[c].titre)[1]} an${+/≥\s*(\d+)/.exec(P[c].titre)[1] > 1 ? "s" : ""}`);
+  function majCst() {
+    const a = vic.age, bc = $(".vp-cst", barre), voir = !barre.hidden && a != null;
+    if (bc) { bc.hidden = !voir; bc.setAttribute("aria-expanded", String(voir && cstOuvert)); }
+    cst.hidden = !(voir && cstOuvert);
+    if (cst.hidden) return;
+    let t;
+    if (a >= 15) t = `<table><thead><tr><th>${nb(a)} ans</th><th>FR</th><th>FC</th></tr></thead><tbody><tr class="moi"><th>Adulte</th><td>12 à 20</td><td>60 à 100</td></tr></tbody></table><p>Douleur : échelle numérique de 0 à 10. Source : carnet, annexe « Bilan secondaire ABCDE ».</p>`;
+    else {
+      const l = ligneCst(a), h_ = horsAge(a);
+      t = `<table><thead><tr><th>${nb(a)} an${a > 1 ? "s" : ""}</th><th>FR</th><th>FC</th><th>PAS</th></tr></thead><tbody>${CST_E.map((r, i) => `<tr${l.includes(i) ? ' class="moi"' : ""}><th>${r[0]}</th><td>${r[1]}</td><td>${r[2]}</td><td>${l.includes(i) ? r[3](a) : r[3](a).replace(/ = \d+$/, "").replace(/× \d+/, "× âge")}</td></tr>`).join("")}</tbody></table>`
+        + `<p>${a >= 3 && a <= 7 ? "Douleur : échelle des visages (3 à 7 ans, 8E)." : a > 7 ? "Douleur : échelle numérique de 0 à 10." : ""}${h_.length ? ` Pas encore l'âge : ${h_.join(", ")}.` : ""}</p><p>Source : carnet, annexe « Constantes vitales pédiatriques ».</p>`;
+    }
+    cst.innerHTML = `<button type="button" class="cst-x" aria-label="Fermer">×</button>${t}`;
+    $(".cst-x", cst).onclick = () => { cstOuvert = false; try { sessionStorage.setItem("pisu44-cst", ""); } catch (e) {} majCst(); };
+  }
   construireBarre();
   function majBarre() {
+    majCst();
     barre.querySelectorAll(".vp").forEach(b => {
       const cle = b.dataset.k, c = CHAMPS[cle], v = vic[cle];
       $(".vp-v", b).innerHTML = v != null ? `<small>${c.lab}</small><b>${nb(v)}</b> ${c.u}` : `<small>${c.lab}</small><b>?</b>`;
@@ -1022,7 +1133,7 @@
     const l = INT.evts.slice().reverse();
     app.appendChild(h("div", { class: "contenu" }, `<h1 class="h-rub">Journal de l'intervention</h1>`
       + (INT.debut ? `<p class="petit">Début : ${heure(INT.debut)}${vic.poids != null ? ` · ${nb(vic.poids)} kg` : ""}${vic.age != null ? ` · ${nb(vic.age)} ans` : ""}. Gardé sur ce téléphone seulement, effacé après 6 h ou par « Nouvelle victime ».</p>` : `<p class="petit">Aucune intervention en cours.</p>`)
-      + (l.length ? `<ol class="journal">${l.map(e => `<li><b>${heure(e.t)}</b> <a href="#/p/${esc(e.code)}/logi/${esc(e.id)}"><span class="code ${classeCode(e.code)}">${esc(e.code)}</span></a> ${esc(e.txt)}</li>`).join("")}</ol>` : "")
+      + (l.length ? `<ol class="journal">${l.map(e => `<li><b>${heure(e.t)}</b> ${e.code === "score" ? `<a href="#/score/${esc(e.id)}">score</a>` : `<a href="#/p/${esc(e.code)}/logi/${esc(e.id)}"><span class="code ${classeCode(e.code)}">${esc(e.code)}</span></a>`} ${esc(e.txt)}</li>`).join("")}</ol>` : "")
       + (enCours() ? `<button type="button" class="ligne j-raz"><span>Nouvelle victime : tout effacer</span></button>` : "")));
     const rz = $(".j-raz", app); if (rz) rz.onclick = () => { if (!rz.classList.contains("sur")) { rz.classList.add("sur"); $("span", rz).textContent = "Toucher encore pour tout effacer"; return; } nouvelleIntervention(); route(); };
   }
@@ -1030,18 +1141,20 @@
   // ------------------------------------------------------------- navigation : barre du bas au pouce, un toucher par rubrique
   const RUB = [
     { id: "protocoles", href: "#/", lab: "Protocoles", ic: '<path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8M8 18h5"/>' },
-    { id: "medicaments", href: "#/medicaments", lab: "Médicaments", ic: '<rect x="3" y="9" width="18" height="7" rx="3.5" transform="rotate(-35 12 12.5)"/><path d="M9.2 8.3l5.7 8"/>' },
+    { id: "sso", href: "#/sso", lab: "SSO", ic: '<path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M12 8.5v7M8.5 12h7"/>' },
     { id: "techniques", href: "#/techniques", lab: "Techniques", ic: '<path d="M14 6l4 4-9 9H5v-4z"/><path d="M12.5 7.5l4 4"/>' },
     { id: "plus", href: "#/plus", lab: "Plus", ic: '<circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/>' },
   ];
   const bas = h("nav", { class: "bas", "aria-label": "Rubriques" }, RUB.map(r => `<a href="${r.href}" data-r="${r.id}"><svg viewBox="0 0 24 24" aria-hidden="true">${r.ic}</svg><span>${r.lab}</span></a>`).join(""));
   document.body.appendChild(bas);
   function rubrique(r) {
-    if (/^#\/(med|medicaments)/.test(r)) return "medicaments";
+    if (/^#\/(med\/|medicaments)/.test(r)) return "plus";
+    if (r === "#/sso") return "sso";
     if (/^#\/(t\/|techniques)/.test(r)) return "techniques";
-    if (/^#\/(plus|reste|c\/|confirmer|memo|journal)/.test(r)) return "plus";
+    if (/^#\/(plus|reste|c\/|confirmer|memo|journal|score)/.test(r)) return "plus";
     const m = r.match(/^#\/p\/([^/]+)/);
-    if (m && (estGen(m[1]) || /SSO$|AT$/.test(m[1]))) return "plus";
+    if (m && /SSO$/.test(m[1])) return "sso";
+    if (m && estGen(m[1])) return "plus";
     return "protocoles";
   }
   function route() {
@@ -1050,7 +1163,7 @@
     window.scrollTo(0, 0);
     const rub = rubrique(r);
     bas.querySelectorAll("a").forEach(a => a.setAttribute("aria-current", String(a.dataset.r === rub)));
-    const home = /^#\/?(adultes|enfants|medicaments|techniques|plus|reste)?$/.test(r);
+    const home = /^#\/?(adultes|enfants|medicaments|techniques|plus|reste|sso)?$/.test(r);
     $("#accueil").hidden = home;
     let m;
     if ((m = r.match(/^#\/p\/([^/]+)(?:\/([a-z]+))?(?:\/(.+))?$/)) && P[m[1]]) pageProto(m[1], m[2], m[3]);
@@ -1059,8 +1172,10 @@
     else if ((m = r.match(/^#\/c\/([a-z0-9-]+)$/)) && window.PISU_COMP && (m[1] === "cadre" || PISU_COMP.fiches.some(f => f.id === m[1]))) pageComp(m[1]);
     else if (r === "#/confirmer") pageConfirmer();
     else if (r === "#/journal") pageJournal();
+    else if ((m = r.match(/^#\/score\/([a-z]+)$/)) && SCORES[m[1]]) pageScore(m[1]);
     else if ((m = r.match(/^#\/memo\/([a-z0-9-]+)$/)) && (window.PISU_MEMOS?.general || []).some(x => x.id === m[1])) pageMemo(m[1]);
     else if (r === "#/medicaments") pageMedicaments();
+    else if (r === "#/sso") pageSSO();
     else if (r === "#/techniques") pageTechniques();
     else if (/^#\/(plus|reste)$/.test(r)) pagePlus();
     else pageProtocoles((r.match(/^#\/(adultes|enfants)$/) || [])[1]);

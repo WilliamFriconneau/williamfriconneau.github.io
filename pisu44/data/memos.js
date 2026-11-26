@@ -999,11 +999,6 @@ window.PISU_MEMOS = {
    "id": "glasgow",
    "titre": "Score de Glasgow (version 2014)",
    "lignes": [
-    "Yeux 4 spontané, 3 au son, 2 pression, 1 aucune",
-    "Verbal 5 orienté, 4 confus, 3 mots",
-    "Verbal 2 sons, 1 aucune",
-    "Moteur 6 obéit, 5 localise, 4 flexion normale",
-    "Moteur 3 flexion anormale, 2 extension, 1 aucune",
     "NT : non testable (cause locale)",
     "Coter la meilleure réponse observée"
    ],
@@ -1015,20 +1010,58 @@ window.PISU_MEMOS = {
      "date": "non daté (version 2014 de l'échelle)",
      "editeur": "Institute of Neurological Sciences, NHS Greater Glasgow and Clyde"
     }
-   ]
+   ],
+   "tableau": {
+    "entetes": [
+     "",
+     "Yeux",
+     "Verbal",
+     "Moteur"
+    ],
+    "lignes": [
+     [
+      "6",
+      "",
+      "",
+      "Obéit"
+     ],
+     [
+      "5",
+      "",
+      "Orienté",
+      "Localise"
+     ],
+     [
+      "4",
+      "Spontané",
+      "Confus",
+      "Flexion normale"
+     ],
+     [
+      "3",
+      "Au son",
+      "Mots",
+      "Flexion anormale"
+     ],
+     [
+      "2",
+      "Pression",
+      "Sons",
+      "Extension"
+     ],
+     [
+      "1",
+      "Aucune",
+      "Aucune",
+      "Aucune"
+     ]
+    ]
+   }
   },
   {
    "id": "constantes-enfant",
    "titre": "Constantes de l'enfant (ERC 2021)",
    "lignes": [
-    "FR normale : 1 mois 25-60",
-    "1 an 20-50 ; 2 ans 18-40",
-    "5 ans 17-30 ; 10 ans 14-25",
-    "FC normale : 1 mois 110-180",
-    "1 an 100-170 ; 2 ans 90-160",
-    "5 ans 70-140 ; 10 ans 60-120",
-    "PAS p5 : 1 mois 50, 1 an 70",
-    "PAS p5 : 5 ans 75, 10 ans 80",
     "Critères PISU : tableau du carnet SDIS"
    ],
    "sources": [
@@ -1039,7 +1072,47 @@ window.PISU_MEMOS = {
      "date": "2021",
      "editeur": "European Resuscitation Council / Notfall + Rettungsmedizin"
     }
-   ]
+   ],
+   "tableau": {
+    "entetes": [
+     "Âge",
+     "FR /min",
+     "FC /min",
+     "PAS p5 mmHg"
+    ],
+    "lignes": [
+     [
+      "1 mois",
+      "25-60",
+      "110-180",
+      "50"
+     ],
+     [
+      "1 an",
+      "20-50",
+      "100-170",
+      "70"
+     ],
+     [
+      "2 ans",
+      "18-40",
+      "90-160",
+      ""
+     ],
+     [
+      "5 ans",
+      "17-30",
+      "70-140",
+      "75"
+     ],
+     [
+      "10 ans",
+      "14-25",
+      "60-120",
+      "80"
+     ]
+    ]
+   }
   },
   {
    "id": "opqrst",
