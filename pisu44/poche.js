@@ -67,7 +67,7 @@
     const enf = /E$/.test(code);
     return vs.find(v => enf === /enfant/i.test(v.nom) && !(enf && /adulte/i.test(v.nom))) || vs[0];
   }
-  const videoHtml = v => `<figure class="prep"><video src="${v.f}" muted loop playsinline controls preload="metadata"></video><figcaption>${esc(v.nom)}</figcaption></figure>`;
+  const videoHtml = v => `<figure class="prep"><img src="${v.f}" alt="Préparation animée : ${esc(v.nom)}" loading="lazy" decoding="async"><figcaption>${esc(v.nom)}</figcaption></figure>`;
   const VIDES = new Set("avec dans pour sans plus moins puis entre selon apres avant chez etre faire fait cette celui elle sont tout tous toute toutes adulte enfant mmhg mg/kg victime".split(" "));
   const mots = s => new Set((s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").match(/[a-z0-9]{4,}/g)?.filter(w => !VIDES.has(w)) || []);
   const BLOCS = {};
@@ -179,7 +179,6 @@
       const i = n.nextElementSibling; if (!i || !i.classList.contains("lg-info")) return;
       ouvrir = ouvrir ?? i.hidden;
       i.hidden = !ouvrir; n.setAttribute("aria-expanded", String(ouvrir));
-      i.querySelectorAll("video").forEach(v => { if (ouvrir && !matchMedia("(prefers-reduced-motion: reduce)").matches) v.play().catch(() => {}); else v.pause(); });
     };
     lg.addEventListener("click", e => {
       if (e.target.closest("a")) return;
@@ -212,20 +211,47 @@
     actif.rendre(z);
     app.appendChild(z);
   }
+  // ------------------------------------------------------------- pictogrammes des protocoles (traits, 24 × 24)
+  const PICTO = {
+    1: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/><path d="M3 12h4l1.5-3 2.5 6 1.5-3H21"/>',
+    2: '<path d="M12 4v8M12 12c-1.5 0-3-1-3-1M12 12c1.5 0 3-1 3-1"/><path d="M9 8c-3 0-5 4-5 8 0 2 1 3 2.5 3S9 17 9 15V8zM15 8c3 0 5 4 5 8 0 2-1 3-2.5 3S15 17 15 15V8z"/>',
+    3: '<path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/><path d="M9.5 15a2.5 2.5 0 0 0 2.5 2.5"/>',
+    4: '<circle cx="12" cy="12" r="8"/><path d="M12 7v6M12 16.5v.5"/>',
+    5: '<path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 2 5 3 3 0 0 0 6 1V5a2 2 0 0 0-3-1zM15 4a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-2 5 3 3 0 0 1-6 1"/><path d="M16 8l-2 4h3l-2 4"/>',
+    6: '<path d="M12 21a6 6 0 0 0 6-6c0-4-3-6-3-9-2 1-3 3-3 5-1-1-1.5-2-1.5-3C7 10 6 12.5 6 15a6 6 0 0 0 6 6z"/>',
+    7: '<path d="M6 17a3 3 0 0 1 0-6 4 4 0 0 1 7.5-1.5A3.5 3.5 0 1 1 17 17z"/><path d="M8 20h8M10 7c0-2 2-2 2-4M15 7c0-1.5 1.5-1.5 1.5-3"/>',
+    8: '<path d="M13 3L5 13h6l-1 8 8-10h-6z"/>',
+    9: '<path d="M12 3s5 6 5 9.5a5 5 0 0 1-10 0C7 9 12 3 12 3z"/><path d="M10 13h4M12 11v4"/>',
+    "1AT": '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/><path d="M12 8v5M12 15.5v.5"/>',
+    "2AT": '<circle cx="8" cy="9" r="1.6"/><circle cx="14" cy="7" r="1.2"/><circle cx="11" cy="14" r="1.8"/><circle cx="16" cy="13" r="1"/><path d="M19 4v10a2 2 0 1 1-2 3"/>',
+    "1SSO": '<path d="M4 15a8 8 0 0 1 16 0z"/><path d="M3 15h18v2H3zM12 7V4"/>',
+    "2SSO": '<path d="M12 3l7 3v5c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6z"/><path d="M12 17a3 3 0 0 0 3-3c0-2-1.5-3-1.5-4.5-1 .5-1.5 1.5-1.5 2.5-.5-.5-.7-1-.7-1.5C9.7 11 9 12.5 9 14a3 3 0 0 0 3 3z"/>',
+    "3SSO": '<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/>',
+    "4SSO": '<path d="M12 2v6"/><circle cx="12" cy="10" r="2"/><path d="M8 13l4 2 4-2M8 13v4l4 3 4-3v-4"/>',
+    "5SSO": '<path d="M3 9h18v5a3 3 0 0 1-3 3h-3l-3-3-3 3H6a3 3 0 0 1-3-3z"/><path d="M19 9V5"/>',
+  };
+  // silhouette d'enfant, en bas à droite, sur pastille bleue
+  const ENFANT = '<g class="pi-enf"><circle cx="20" cy="20" r="8.5" class="pi-enf-fond"/><circle cx="20" cy="15.6" r="2.3" class="pi-enf-tete"/><path d="M15.8 26v-3.4a4.2 4.2 0 0 1 8.4 0V26z" class="pi-enf-tete"/></g>';
+  function picto(c) {
+    const m = c.match(/^(\d)([AE])$/), d = PICTO[c] || (m && PICTO[m[1]]);
+    if (!d) return "";
+    const enf = m && m[2] === "E";
+    return `<svg class="picto ${classeCode(c)}" viewBox="0 0 24 24" aria-hidden="true"><g class="pi-tr"${enf ? ' transform="translate(-1.5 -1.5) scale(.85)"' : ""}>${d}</g>${enf ? ENFANT : ""}</svg>`;
+  }
   function lienCode(c) {
     const p = P[c];
-    return `<a class="ligne" href="#/p/${c}"><span class="code ${classeCode(c)}">${c}</span><span>${esc(p.titre)}</span>${errataPour(c).inc.length ? `<span class="pr-n" title="points à confirmer">${errataPour(c).inc.length}</span>` : ""}</a>`;
+    return `<a class="ligne proto ${classeCode(c)}" href="#/p/${c}">${picto(c)}<span class="code ${classeCode(c)}">${c}</span><span>${esc(p.titre)}</span>${errataPour(c).inc.length ? `<span class="pr-n" title="points à confirmer">${errataPour(c).inc.length}</span>` : ""}</a>`;
   }
   // dans les apps PISU 44 (vue web Android « ; wv) », vue web iOS sans « Safari ») : pas de proposition d’installation
   const dansLApp = () => { const u = navigator.userAgent; return /; wv\)/.test(u) || (/iPhone|iPad/.test(u) && !/Safari\//.test(u)); };
   const ACCUEIL = [
     { id: "adultes", titre: "Adultes", rendre: z => z.innerHTML = `<section class="bloc"><h2>Adulte et enfant ≥ 15 ans</h2>${[1,2,3,4,5,6,7,8,9].filter(i => P[i + "A"]).map(i => lienCode(i + "A")).join("")}</section>` },
     { id: "enfants", titre: "Enfants", rendre: z => z.innerHTML = `<section class="bloc"><h2>Enfant &lt; 15 ans</h2>${[1,2,3,4,5,6,7,8,9].filter(i => P[i + "E"]).map(i => lienCode(i + "E")).join("")}</section>` },
-    { id: "reste", titre: "Le reste", rendre: z => {
+    { id: "medicaments", titre: "Médicaments", rendre: z => z.innerHTML = `<section class="bloc"><h2>Médicaments</h2>${Object.values(M).map(m => `<a class="ligne" href="#/med/${m.code}"><span class="code med">${m.code}</span><span>${esc(m.dci)} <small>${esc(m.spe)}</small></span></a>`).join("")}</section>` },
+    { id: "plus", titre: "Plus", rendre: z => {
       const gens = [...ORDRE_GEN.filter(c => P[c]), ...Object.keys(P).filter(c => estGen(c) && !ORDRE_GEN.includes(c))];
       z.innerHTML = `<section class="bloc"><h2>Actes de télémédecine</h2>${PROTO_AT.filter(c => P[c]).map(lienCode).join("")}</section>`
         + `<section class="bloc"><h2>Soutien sanitaire opérationnel</h2>${PROTO_SSO.filter(c => P[c]).map(lienCode).join("")}</section>`
-        + `<section class="bloc"><h2>Médicaments</h2>${Object.values(M).map(m => `<a class="ligne" href="#/med/${m.code}"><span class="code med">${m.code}</span><span>${esc(m.dci)} <small>${esc(m.spe)}</small></span></a>`).join("")}</section>`
         + (dansLApp() ? "" : `<section class="bloc"><h2>Sur l'écran d'accueil</h2><p class="petit">Le carnet s'installe comme une application, sans store, et marche sans réseau : tout est téléchargé à la première ouverture, puis mis à jour dès que le réseau est là. iPhone : Safari, bouton Partager, « Sur l'écran d'accueil ». Android : Chrome, menu ⋮, « Installer l'application ».</p><button class="ligne b-inst" type="button" hidden><span>Installer PISU 44 sur cet appareil</span></button></section>`)
         + `<section class="bloc"><h2>Généralités et annexes</h2>${gens.map(c => `<a class="ligne" href="#/p/${c}"><span>${esc(P[c].titre)}</span></a>`).join("")}<a class="ligne" href="#/confirmer"><span>Points à confirmer sans protocole précis</span></a></section>`;
     } },
@@ -234,17 +260,18 @@
     document.title = "PISU 44";
     let id = partie;
     if (!id) { try { id = localStorage.getItem("pisu44-accueil"); } catch (e) {} }
-    const actif = ACCUEIL.find(a => a.id === id) || ACCUEIL[0];
+    const actif = ACCUEIL.find(a => a.id === (id === "reste" ? "plus" : id)) || ACCUEIL[0];
     try { localStorage.setItem("pisu44-accueil", actif.id); } catch (e) {}
     onglets(ACCUEIL, actif, "#");
     const bi = $(".b-inst", app);
     if (bi && installer) { bi.hidden = false; bi.onclick = async () => { installer.prompt(); await installer.userChoice; installer = null; bi.hidden = true; }; }
     app.lastChild.classList.add("accueil");
+    $(".seg", app).classList.add("seg-accueil");
   }
   function pageProto(code, partie, cible) {
     const p = P[code];
     document.title = `${estGen(code) ? "" : code + " · "}${p.titre}`;
-    const tete = h("div", { class: "p-tete" }, `<div class="pt-tx"><h1>${estGen(code) ? "" : `<span class="code ${classeCode(code)}">${code}</span>`}${esc(p.titre)}</h1>${p.ecartTitre ? `<p>${ecartHtml(p.ecartTitre)}</p>` : ""}</div>`);
+    const tete = h("div", { class: "p-tete" }, `<div class="pt-tx"><h1>${estGen(code) ? "" : `${picto(code)}<span class="code ${classeCode(code)}">${code}</span>`}${esc(p.titre)}</h1>${p.ecartTitre ? `<p>${ecartHtml(p.ecartTitre)}</p>` : ""}</div>`);
     const autre = paire(code);
     if (autre && P[autre]) tete.appendChild(h("a", { class: "b ae-b", href: `#/p/${autre}/${partie || "logi"}`, "aria-label": `Même protocole pour ${/E$/.test(autre) ? "l'enfant" : "l'adulte"}` }, `${autre} ⇄`));
     app.appendChild(tete);
@@ -277,7 +304,7 @@
     app.appendChild(h("div", { class: "p-tete" }, `<div class="pt-tx"><h1><span class="code med">${code}</span>${esc(m.dci)} <small>${esc(m.spe)}</small></h1></div>`));
     const { inc, cor } = errataPour(code);
     const liste = [{ id: "fiche", titre: "Fiche", rendre: z => {
-      if (m.protos.length) z.appendChild(h("p", { class: "protos" }, `Protocoles : ${m.protos.map(c => `<a href="#/p/${c}">${c}</a>`).join(" · ")}`));
+      if (m.protos.length) z.appendChild(h("section", { class: "bloc protos" }, `<h2>Utilisé dans</h2>${m.protos.filter(c => P[c]).map(lienCode).join("")}`));
       if ((VID[code] || []).length) z.appendChild(h("div", { class: "preps" }, `<h2>Préparation</h2>${VID[code].map(videoHtml).join("")}`));
       z.appendChild(fiche(m.fiche));
       const f = figureMed(code); if (f) z.appendChild(f);
@@ -356,7 +383,7 @@
     const r = decodeURIComponent(location.hash || "#/");
     app.textContent = "";
     window.scrollTo(0, 0);
-    const home = r.match(/^#\/?(adultes|enfants|reste)?$/);
+    const home = r.match(/^#\/?(adultes|enfants|medicaments|plus|reste)?$/);
     $("#accueil").hidden = !!home;
     let m;
     if ((m = r.match(/^#\/p\/([^/]+)(?:\/([a-z]+))?(?:\/(.+))?$/)) && P[m[1]]) pageProto(m[1], m[2], m[3]);
