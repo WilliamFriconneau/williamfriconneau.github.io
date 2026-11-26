@@ -70,10 +70,10 @@
   const videoHtml = v => `<figure class="prep"><img src="${v.f}" alt="Préparation animée : ${esc(v.nom)}" loading="lazy" decoding="async"><figcaption>${esc(v.nom)} · <span class="prep-z">toucher pour agrandir</span></figcaption></figure>`;
   // préparation en grand : plein écran, repart du début, on peut zoomer avec deux doigts ; un toucher ferme
   document.addEventListener("click", e => {
-    const im = e.target.closest?.(".prep img"); if (!im) return;
+    const im = e.target.closest?.(".prep img, .t-page img"); if (!im) return;
     e.preventDefault(); e.stopPropagation();
     const z = document.createElement("div"); z.className = "prep-grand"; z.setAttribute("role", "dialog"); z.setAttribute("aria-label", im.alt);
-    z.innerHTML = `<img src="${im.getAttribute("src")}" alt="${esc(im.alt)}"><p>${esc(im.alt.replace(/^Préparation animée : /, ""))} · toucher pour fermer</p>`;
+    z.innerHTML = `<img src="${im.getAttribute("src")}" alt="${esc(im.alt)}"><p>${esc(im.alt.replace(/^Préparation animée : /, "").slice(0, 80))} · toucher pour fermer</p>`;
     const fermer = () => { z.remove(); document.removeEventListener("keydown", esc_); };
     const esc_ = ev => { if (ev.key === "Escape") fermer(); };
     z.addEventListener("click", fermer); document.addEventListener("keydown", esc_);
@@ -298,33 +298,86 @@
   }
   // dans les apps PISU 44 (vue web Android « ; wv) », vue web iOS sans « Safari ») : pas de proposition d’installation
   const dansLApp = () => { const u = navigator.userAgent; return /; wv\)/.test(u) || (/iPhone|iPad/.test(u) && !/Safari\//.test(u)); };
-  const ACCUEIL = [
-    { id: "adultes", titre: "Adultes", rendre: z => z.innerHTML = `<section class="bloc"><h2>Adulte et enfant ≥ 15 ans</h2>${[1,2,3,4,5,6,7,8,9].filter(i => P[i + "A"]).map(i => lienCode(i + "A")).join("")}</section>` },
-    { id: "enfants", titre: "Enfants", rendre: z => z.innerHTML = `<section class="bloc"><h2>Enfant &lt; 15 ans</h2>${[1,2,3,4,5,6,7,8,9].filter(i => P[i + "E"]).map(i => lienCode(i + "E")).join("")}</section>` },
-    { id: "medicaments", titre: "Médicaments", rendre: z => z.innerHTML = `<section class="bloc"><h2>Médicaments</h2>${Object.values(M).map(m => `<a class="ligne" href="#/med/${m.code}"><span class="code med">${m.code}</span><span>${esc(m.dci)} <small>${esc(m.spe)}</small></span></a>`).join("")}</section>` },
-    { id: "plus", titre: "Plus", rendre: z => {
-      const gens = [...ORDRE_GEN.filter(c => P[c]), ...Object.keys(P).filter(c => estGen(c) && !ORDRE_GEN.includes(c))];
-      z.innerHTML = `<section class="bloc"><h2>Actes de télémédecine</h2>${PROTO_AT.filter(c => P[c]).map(lienCode).join("")}</section>`
-        + `<section class="bloc"><h2>Soutien sanitaire opérationnel</h2>${PROTO_SSO.filter(c => P[c]).map(lienCode).join("")}</section>`
-        + (dansLApp() ? "" : `<section class="bloc"><h2>Sur l'écran d'accueil</h2><p class="petit">Le carnet s'installe comme une application, sans store, et marche sans réseau : tout est téléchargé à la première ouverture, puis mis à jour dès que le réseau est là. iPhone : Safari, bouton Partager, « Sur l'écran d'accueil ». Android : Chrome, menu ⋮, « Installer l'application ».</p><button class="ligne b-inst" type="button" hidden><span>Installer PISU 44 sur cet appareil</span></button></section>`)
-        + `<section class="bloc"><h2>Généralités et annexes</h2>${gens.map(c => `<a class="ligne" href="#/p/${c}"><span>${esc(P[c].titre)}</span></a>`).join("")}<a class="ligne" href="#/confirmer"><span>Points à confirmer sans protocole précis</span></a></section>`;
-    } },
-  ];
-  function accueil(partie) {
+  // ------------------------------------------------------------- récents : les dernières fiches ouvertes, pour revenir vite en intervention
+  const RECENTS_CLE = "pisu44-recents";
+  const lireRecents = () => { try { return JSON.parse(localStorage.getItem(RECENTS_CLE) || "[]"); } catch (e) { return []; } };
+  function noterRecent(href, lab) {
+    const l = [{ href, lab }, ...lireRecents().filter(r => r.href !== href)].slice(0, 6);
+    try { localStorage.setItem(RECENTS_CLE, JSON.stringify(l)); } catch (e) {}
+  }
+  function blocRecents() {
+    const l = lireRecents();
+    if (!l.length) return "";
+    return `<section class="recents" aria-label="Ouverts récemment"><h2>Récents</h2><div class="rc-l">${l.map(r => `<a class="rc" href="${esc(r.href)}">${r.lab}</a>`).join("")}</div></section>`;
+  }
+  const T = window.PISU_TECH || { cats: [], fiches: [] };
+  const TECH = Object.fromEntries(T.fiches.map(f => [f.id, f]));
+  const listeProtos = suf => [1, 2, 3, 4, 5, 6, 7, 8, 9].filter(i => P[i + suf]).map(i => lienCode(i + suf)).join("");
+  // ------------------------------------------------------------- accueil : protocoles (adulte ou enfant), médicaments, techniques, plus
+  function pageProtocoles(public_) {
     document.title = "PISU 44";
-    let id = partie;
-    if (!id) { try { id = localStorage.getItem("pisu44-accueil"); } catch (e) {} }
-    const actif = ACCUEIL.find(a => a.id === (id === "reste" ? "plus" : id)) || ACCUEIL[0];
-    try { localStorage.setItem("pisu44-accueil", actif.id); } catch (e) {}
-    onglets(ACCUEIL, actif, "#");
+    let pub = public_;
+    if (!pub) { try { pub = localStorage.getItem("pisu44-public"); } catch (e) {} }
+    pub = pub === "enfants" ? "enfants" : "adultes";
+    try { localStorage.setItem("pisu44-public", pub); } catch (e) {}
+    const seg = h("nav", { class: "seg seg-pub", "aria-label": "Public" });
+    [["adultes", "Adulte <small>≥ 15 ans</small>"], ["enfants", "Enfant <small>&lt; 15 ans</small>"]].forEach(([id, lab]) =>
+      seg.appendChild(h("a", { href: `#/${id}`, class: "seg-b " + (id === "enfants" ? "e" : "a"), "aria-current": String(id === pub) }, lab)));
+    app.appendChild(h("div", { class: "contenu accueil" }, blocRecents()));
+    app.appendChild(seg);
+    app.appendChild(h("div", { class: "contenu accueil" }, `<section class="bloc">${listeProtos(pub === "enfants" ? "E" : "A")}</section>`));
+  }
+  function pageMedicaments() {
+    document.title = "Médicaments · PISU 44";
+    app.appendChild(h("div", { class: "contenu accueil" }, `<h1 class="h-rub">Médicaments</h1><section class="bloc">${Object.values(M).map(m => `<a class="ligne" href="#/med/${m.code}"><span class="code med">${m.code}</span><span>${esc(m.dci)} <small>${esc(m.spe)}</small></span></a>`).join("")}</section>`));
+  }
+  const refTech = f => [f.ref, f.date || (f.en_ligne ? "en ligne le " + f.en_ligne.split("-").reverse().join("/") : "")].filter(Boolean).join(" · ");
+  function pageTechniques() {
+    document.title = "Techniques · PISU 44";
+    app.appendChild(h("div", { class: "contenu accueil" }, `<h1 class="h-rub">Fiches techniques</h1><p class="petit">Documents du SDIS 44 (SSSM et GED opérationnelle), montrés tels quels.</p>`
+      + T.cats.map(([id, nom]) => { const l = T.fiches.filter(f => f.cat === id); return l.length ? `<section class="bloc"><h2>${esc(nom)}</h2>${l.map(f => `<a class="ligne tech" href="#/t/${f.id}"><span>${esc(f.titre)}${refTech(f) ? `<small>${esc(refTech(f))}</small>` : ""}</span>${f.videos.length ? `<span class="t-vid" title="vidéo en ligne">▶</span>` : ""}</a>`).join("")}</section>` : ""; }).join("")));
+  }
+  function pageTech(id) {
+    const f = TECH[id];
+    document.title = `${f.titre} · PISU 44`;
+    noterRecent(`#/t/${id}`, `<span class="rc-t">T</span>${esc(f.titre)}`);
+    const src = f.document ? `<p class="t-src">Source : « ${esc(f.document)} »${f.ref ? `, ${esc(f.ref)}` : ""}${f.date ? `, ${esc(f.date)}` : ""}. ${esc(f.origine)}${f.en_ligne ? `, mis en ligne le ${f.en_ligne.split("-").reverse().join("/")}` : ""}.</p>` : "";
+    app.appendChild(h("div", { class: "p-tete" }, `<div class="pt-tx"><h1>${esc(f.titre)}</h1>${src}</div>`));
+    const z = h("div", { class: "contenu tech-c" });
+    if (f.videos.length) z.appendChild(h("section", { class: "bloc t-videos" }, `<h2>En vidéo <small>(réseau nécessaire)</small></h2>${f.videos.map(v => `<a class="ligne" href="${esc(v.url)}" target="_blank" rel="noopener"><span class="t-vid">▶</span><span>${esc(v.titre)}<small>${esc(v.par)}</small></span></a>`).join("")}`));
+    if (f.pages) z.appendChild(h("div", { class: "t-pages" }, f.pages.map((p, i) => `<figure class="t-page"><img src="techniques/${p}" alt="${esc(f.titre)}, page ${i + 1} : ${esc((f.texte[i] || "").slice(0, 300))}" loading="${i < 2 ? "eager" : "lazy"}" decoding="async"><figcaption>Page ${i + 1} / ${f.pages.length} · toucher pour agrandir</figcaption></figure>`).join("")));
+    if (f.blocs) {
+      const d = h("div", { class: "fiche t-blocs" });
+      let ul = null;
+      f.blocs.forEach(b => {
+        if (b.t !== "li") ul = null;
+        if (b.t === "h") d.appendChild(h("h3", {}, esc(b.x)));
+        else if (b.t === "p") d.appendChild(h("p", {}, esc(b.x)));
+        else if (b.t === "li") { if (!ul) { ul = h("ul"); d.appendChild(ul); } ul.appendChild(h("li", {}, esc(b.x))); }
+        else if (b.t === "img") d.appendChild(h("figure", { class: "t-page" }, `<img src="techniques/${b.f}" alt="Illustration du document" loading="lazy" decoding="async">`));
+        else if (b.t === "table") d.appendChild(h("table", {}, b.l.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")));
+      });
+      z.appendChild(d);
+    }
+    app.appendChild(z);
+  }
+  function pagePlus() {
+    document.title = "Plus · PISU 44";
+    const gens = [...ORDRE_GEN.filter(c => P[c]), ...Object.keys(P).filter(c => estGen(c) && !ORDRE_GEN.includes(c))];
+    const C = window.PISU_COMP;
+    app.appendChild(h("div", { class: "contenu accueil" }, `<h1 class="h-rub">Plus</h1>`
+      + `<section class="bloc"><h2>Soutien sanitaire opérationnel</h2>${PROTO_SSO.filter(c => P[c]).map(lienCode).join("")}</section>`
+      + `<section class="bloc"><h2>Actes de télémédecine</h2>${PROTO_AT.filter(c => P[c]).map(lienCode).join("")}</section>`
+      + (C && C.fiches.length ? `<section class="bloc"><h2>Gestes infirmiers de base</h2>${C.fiches.map(f => `<a class="ligne" href="#/c/${f.id}"><span>${esc(f.titre)}</span></a>`).join("")}<a class="ligne" href="#/c/cadre"><span>Le cadre infirmier en 2026</span></a></section>` : "")
+      + `<section class="bloc"><h2>Généralités et annexes</h2>${gens.map(c => `<a class="ligne" href="#/p/${c}"><span>${esc(P[c].titre)}</span></a>`).join("")}<a class="ligne" href="#/confirmer"><span>Points à confirmer sans protocole précis</span></a></section>`
+      + (dansLApp() ? "" : `<section class="bloc"><h2>Sur l'écran d'accueil</h2><p class="petit">Le carnet s'installe comme une application, sans store, et marche sans réseau : tout est téléchargé à la première ouverture. Pour mettre à jour, tirer la page vers le bas avec du réseau. iPhone : Safari, bouton Partager, « Sur l'écran d'accueil ». Android : Chrome, menu ⋮, « Installer l'application ».</p><button class="ligne b-inst" type="button" hidden><span>Installer PISU 44 sur cet appareil</span></button></section>`)));
     const bi = $(".b-inst", app);
     if (bi && installer) { bi.hidden = false; bi.onclick = async () => { installer.prompt(); await installer.userChoice; installer = null; bi.hidden = true; }; }
-    app.lastChild.classList.add("accueil");
-    $(".seg", app).classList.add("seg-accueil");
   }
   function pageProto(code, partie, cible) {
     const p = P[code];
     document.title = `${estGen(code) ? "" : code + " · "}${p.titre}`;
+    if (!estGen(code)) noterRecent(`#/p/${code}`, `${picto(code)}<span class="code ${classeCode(code)}">${code}</span>`);
     const tete = h("div", { class: "p-tete" }, `<div class="pt-tx"><h1>${estGen(code) ? "" : `${picto(code)}<span class="code ${classeCode(code)}">${code}</span>`}${esc(p.titre)}</h1>${p.ecartTitre ? `<p>${ecartHtml(p.ecartTitre)}</p>` : ""}</div>`);
     const autre = paire(code);
     if (autre && P[autre]) tete.appendChild(h("a", { class: "b ae-b", href: `#/p/${autre}/${partie || "logi"}`, "aria-label": `Même protocole pour ${/E$/.test(autre) ? "l'enfant" : "l'adulte"}` }, `${autre} ⇄`));
@@ -362,6 +415,7 @@
   function pageMed(code, partie) {
     const m = M[code];
     document.title = `${code} · ${m.dci}`;
+    noterRecent(`#/med/${code}`, `<span class="code med">${code}</span>${esc(m.dci)}`);
     app.appendChild(h("div", { class: "p-tete" }, `<div class="pt-tx"><h1><span class="code med">${code}</span>${esc(m.dci)} <small>${esc(m.spe)}</small></h1></div>`));
     const { inc, cor } = errataPour(code);
     const liste = [{ id: "fiche", titre: "Fiche", rendre: z => {
@@ -388,6 +442,8 @@
     INDEX = [];
     Object.values(P).forEach(p => INDEX.push({ t: `${p.code} ${p.titre}`, c: texteDe((p.fiche || "") + " " + (p.protocole || "")) + " " + (p.logi ? p.logi.nodes.map(n => n.txt).join(" ") : ""), href: `#/p/${p.code}`, lab: `${estGen(p.code) ? "" : `<span class="code ${classeCode(p.code)}">${p.code}</span>`}${esc(p.titre)}` }));
     Object.values(M).forEach(m => INDEX.push({ t: `${m.code} ${m.dci} ${m.spe}`, c: texteDe(m.fiche), href: `#/med/${m.code}`, lab: `<span class="code med">${m.code}</span>${esc(m.dci)} <small>${esc(m.spe)}</small>` }));
+    T.fiches.forEach(f => INDEX.push({ t: `${f.titre} ${f.document || ""}`, c: (f.texte || []).join(" ") + " " + f.videos.map(v => v.titre).join(" "), href: `#/t/${f.id}`, lab: `<span class="code tech">T</span>${esc(f.titre)}` }));
+    (window.PISU_COMP?.fiches || []).forEach(f => INDEX.push({ t: f.titre, c: [f.pour_quoi, ...(f.etapes || []).map(e => e.t), ...(f.points_cles || []).map(e => e.t)].join(" "), href: `#/c/${f.id}`, lab: `<span class="code comp">IDE</span>${esc(f.titre)}` }));
     INDEX.forEach(x => { x.tn = norm(x.t); x.cn = norm(x.c); x.tw = x.tn.split(" "); x.cw = [...new Set(x.cn.split(" "))]; });
   }
   function dist(a, b, max) {
@@ -439,31 +495,96 @@
     if (e.key === "Enter") { const a = $("a", rres); if (a) { location.hash = a.getAttribute("href"); fermer(); } }
   });
 
-  // ------------------------------------------------------------- navigation
+  // ------------------------------------------------------------- gestes infirmiers de base (fiches sourcées)
+  function pageComp(id) {
+    const C = window.PISU_COMP;
+    const srcHtml = (sources, ids) => ids && ids.length ? `<sup class="c-s">${ids.map(i => { const k = sources.findIndex(x => x.id === i); return k >= 0 ? `<a href="#s-${esc(i)}">${k + 1}</a>` : ""; }).join(",")}</sup>` : "";
+    const listeSources = sources => `<section class="bloc c-sources"><h2>Sources</h2><ol>${sources.map(x => `<li id="s-${esc(x.id)}"><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.titre)}</a><small>${[x.editeur, x.niveau, x.date].filter(Boolean).map(esc).join(" · ")}</small></li>`).join("")}</ol></section>`;
+    if (id === "cadre") {
+      document.title = "Cadre infirmier 2026 · PISU 44";
+      app.appendChild(h("div", { class: "p-tete" }, `<div class="pt-tx"><h1>Le cadre infirmier en 2026</h1><p class="t-src">Fiche de synthèse, ${esc(C.genere_le)}, chaque point renvoie à sa source.</p></div>`));
+      app.appendChild(h("div", { class: "contenu fiche" }, `<ul>${C.cadre.resume.map(r => `<li>${esc(r.t ?? r)}${srcHtml(C.cadre.sources, r.s)}</li>`).join("")}</ul>${listeSources(C.cadre.sources)}`));
+      return;
+    }
+    const f = C.fiches.find(x => x.id === id);
+    document.title = `${f.titre} · PISU 44`;
+    noterRecent(`#/c/${id}`, `<span class="rc-t">IDE</span>${esc(f.titre)}`);
+    const liste = (titre, l, ol) => l && l.length ? `<h2>${titre}</h2><${ol ? "ol" : "ul"}>${l.map(e => `<li>${esc(e.t ?? e)}${srcHtml(f.sources, e.s)}</li>`).join("")}</${ol ? "ol" : "ul"}>` : "";
+    app.appendChild(h("div", { class: "p-tete" }, `<div class="pt-tx"><h1>${esc(f.titre)}</h1><p class="t-src">Récapitulatif du geste infirmier, à part des documents du SDIS. ${esc(f.pour_quoi || "")}</p></div>`));
+    app.appendChild(h("div", { class: "contenu fiche" }, liste("Matériel", f.materiel) + liste("Étapes", f.etapes, true) + liste("Points clés", f.points_cles) + listeSources(f.sources)));
+  }
+
+  // ------------------------------------------------------------- navigation : barre du bas au pouce, un toucher par rubrique
+  const RUB = [
+    { id: "protocoles", href: "#/", lab: "Protocoles", ic: '<path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8M8 18h5"/>' },
+    { id: "medicaments", href: "#/medicaments", lab: "Médicaments", ic: '<rect x="3" y="9" width="18" height="7" rx="3.5" transform="rotate(-35 12 12.5)"/><path d="M9.2 8.3l5.7 8"/>' },
+    { id: "techniques", href: "#/techniques", lab: "Techniques", ic: '<path d="M14 6l4 4-9 9H5v-4z"/><path d="M12.5 7.5l4 4"/>' },
+    { id: "plus", href: "#/plus", lab: "Plus", ic: '<circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/>' },
+  ];
+  const bas = h("nav", { class: "bas", "aria-label": "Rubriques" }, RUB.map(r => `<a href="${r.href}" data-r="${r.id}"><svg viewBox="0 0 24 24" aria-hidden="true">${r.ic}</svg><span>${r.lab}</span></a>`).join(""));
+  document.body.appendChild(bas);
+  function rubrique(r) {
+    if (/^#\/(med|medicaments)/.test(r)) return "medicaments";
+    if (/^#\/(t\/|techniques)/.test(r)) return "techniques";
+    if (/^#\/(plus|reste|c\/|confirmer)/.test(r)) return "plus";
+    const m = r.match(/^#\/p\/([^/]+)/);
+    if (m && (estGen(m[1]) || /SSO$|AT$/.test(m[1]))) return "plus";
+    return "protocoles";
+  }
   function route() {
     const r = decodeURIComponent(location.hash || "#/");
     app.textContent = "";
     window.scrollTo(0, 0);
-    const home = r.match(/^#\/?(adultes|enfants|medicaments|plus|reste)?$/);
-    $("#accueil").hidden = !!home;
+    const rub = rubrique(r);
+    bas.querySelectorAll("a").forEach(a => a.setAttribute("aria-current", String(a.dataset.r === rub)));
+    const home = /^#\/?(adultes|enfants|medicaments|techniques|plus|reste)?$/.test(r);
+    $("#accueil").hidden = home;
     let m;
     if ((m = r.match(/^#\/p\/([^/]+)(?:\/([a-z]+))?(?:\/(.+))?$/)) && P[m[1]]) pageProto(m[1], m[2], m[3]);
     else if ((m = r.match(/^#\/med\/(M\d+)(?:\/([a-z]+))?$/)) && M[m[1]]) pageMed(m[1], m[2]);
+    else if ((m = r.match(/^#\/t\/([a-z0-9-]+)$/)) && TECH[m[1]]) pageTech(m[1]);
+    else if ((m = r.match(/^#\/c\/([a-z0-9-]+)$/)) && window.PISU_COMP && (m[1] === "cadre" || PISU_COMP.fiches.some(f => f.id === m[1]))) pageComp(m[1]);
     else if (r === "#/confirmer") pageConfirmer();
-    else accueil(home && home[1]);
+    else if (r === "#/medicaments") pageMedicaments();
+    else if (r === "#/techniques") pageTechniques();
+    else if (/^#\/(plus|reste)$/.test(r)) pagePlus();
+    else pageProtocoles((r.match(/^#\/(adultes|enfants)$/) || [])[1]);
   }
-  // transition : la page glisse doucement, la VLI traverse l'écran gyrophare allumé
+  // ------------------------------------------------------------- la VLI : au démarrage, à l'ouverture d'un protocole, et de temps en temps
   const VLI = `<svg viewBox="-30 -17 60 25" aria-hidden="true"><path d="M-27 3 L-27 -7 L-25 -11.5 L4 -12 L12 -5.5 L24 -3.5 L27 0 L27 3 Z" fill="#c62828" stroke="#5a0b0b" stroke-width=".8"/><path d="M-23.5 -10.5 L3 -10.8 L9.5 -5.8 L-23.5 -5.8 Z" fill="#263238"/><path d="M-9 -10.8 v5 M-3 -10.8 v5" stroke="#c62828" stroke-width="1.2"/><rect x="-27" y="-5" width="51" height="1.6" fill="#ffeb3b"/>${[...Array(12)].map((_, k) => `<path d="M${-24 + 4 * k} 2.6 l2 -2.6 h2 l-2 2.6 z" fill="#ffeb3b"/>`).join("")}<rect class="gy g1" x="-7" y="-14.5" width="7" height="2.5" rx="1"/><rect class="gy g2" x="0" y="-14.5" width="7" height="2.5" rx="1"/><circle cx="-16" cy="3.5" r="4.4" fill="#212121"/><circle cx="-16" cy="3.5" r="2.2" fill="#b0bec5"/><circle cx="16" cy="3.5" r="4.4" fill="#212121"/><circle cx="16" cy="3.5" r="2.2" fill="#b0bec5"/><path d="M23.5 -2.5 l3 .6 v1.4 l-3 -.4 z" fill="#fff59d"/></svg>`;
   const calme = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
-  function transition() {
+  // la voiture traverse le bas de l'écran ; rien ne bloque, la page est déjà là
+  function passe() {
     if (calme()) return;
-    app.classList.remove("entre"); void app.offsetWidth; app.classList.add("entre");
     const old = $(".vli-passe"); if (old) old.remove();
     const v = h("div", { class: "vli-passe", "aria-hidden": "true" }, VLI);
     document.body.appendChild(v);
     v.addEventListener("animationend", () => v.remove());
   }
-  window.addEventListener("hashchange", () => { route(); transition(); });
+  // ouverture d'un protocole : un écran avec seulement la VLI, gyrophares allumés, qui démarre et s'en va (0,7 s, un toucher l'écarte)
+  function depart() {
+    if (calme()) return;
+    const old = $(".vli-depart"); if (old) old.remove();
+    const d = h("div", { class: "vli-depart", "aria-hidden": "true" }, `<div class="vd-halo"></div><div class="vd-car">${VLI}</div><div class="vd-route"></div>`);
+    const fin = () => d.remove();
+    d.addEventListener("pointerdown", fin);
+    d.addEventListener("animationend", e => { if (e.target === d) fin(); });
+    document.body.appendChild(d);
+  }
+  const protoDe = r => (r.match(/^#\/p\/([^/]+)/) || [])[1];
+  let avant = decodeURIComponent(location.hash || "#/"), changements = 0;
+  window.addEventListener("hashchange", () => {
+    const r = decodeURIComponent(location.hash || "#/"), pa = protoDe(avant), pn = protoDe(r);
+    route();
+    if (!calme()) { app.classList.remove("entre"); void app.offsetWidth; app.classList.add("entre"); }
+    // nouveau protocole (pas un changement d'onglet dans le même) : écran de départ
+    if (pn && pn !== pa && !estGen(pn) && !paireDe(pn, pa)) depart();
+    // en passant d'un protocole à autre chose, la voiture repasse de temps en temps (une fois sur quatre)
+    else if (pa && !pn && ++changements % 4 === 0) passe();
+    avant = r;
+  });
+  const paireDe = (a, b) => b && paire(a) === b;
+
   // ------------------------------------------------------------- hors ligne (PWA) : tout le site en cache, mis à jour en ligne
   const hl = h("div", { class: "hl", role: "status" });
   document.body.appendChild(hl);
@@ -472,8 +593,40 @@
   window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installer = e; });
   // le manifeste d'installation seulement sur le web (en fichier local, Chrome le refuse et le signale en erreur)
   if (/^https?:$/.test(location.protocol) && !dansLApp()) document.head.appendChild(h("link", { rel: "manifest", href: "app.webmanifest" }));
+  // tirer vers le bas en haut de page : cherche une mise à jour si le réseau est là ; sans réseau, la copie enregistrée reste telle quelle
+  const tir = h("div", { class: "tirer", "aria-hidden": "true" }, `<span class="ti-f">↓</span><span class="ti-t">Tirer pour mettre à jour</span>`);
+  document.body.appendChild(tir);
+  let tirY = null, tirD = 0, tirEnCours = false, demandeTir = null;
+  const SEUIL = 80;
+  window.addEventListener("touchstart", e => { tirY = (window.scrollY <= 0 && !tirEnCours && e.touches.length === 1 && !e.target.closest(".lg-split, .prep-grand, .t-zoom")) ? e.touches[0].clientY : null; tirD = 0; }, { passive: true });
+  window.addEventListener("touchmove", e => {
+    if (tirY === null) return;
+    tirD = Math.max(0, e.touches[0].clientY - tirY);
+    if (window.scrollY > 0) { tirY = null; tirD = 0; }
+    const k = Math.min(1, tirD / SEUIL);
+    tir.style.transform = `translate(-50%, ${Math.min(tirD, SEUIL * 1.3) - 50}px)`;
+    tir.style.opacity = String(k);
+    tir.classList.toggle("pret", k >= 1);
+    $(".ti-t", tir).textContent = k >= 1 ? "Relâcher pour mettre à jour" : "Tirer pour mettre à jour";
+  }, { passive: true });
+  window.addEventListener("touchend", () => {
+    if (tirY === null) return;
+    const go = tirD >= SEUIL; tirY = null; tirD = 0;
+    if (!go) { tir.style.transform = ""; tir.style.opacity = "0"; return; }
+    tirEnCours = true; tir.classList.add("tourne"); $(".ti-t", tir).textContent = "Recherche de mise à jour…";
+    const finir = txt => { $(".ti-t", tir).textContent = txt; setTimeout(() => { tir.classList.remove("tourne", "pret"); tir.style.transform = ""; tir.style.opacity = "0"; tirEnCours = false; }, 1400); };
+    if (!navigator.onLine) return finir("Pas de réseau : la version enregistrée reste utilisée.");
+    if (demandeTir) demandeTir(finir);
+    else if (window.webkit?.messageHandlers?.pisu) { window.webkit.messageHandlers.pisu.postMessage("maj"); finir("Mise à jour demandée."); }
+    else finir("Pas de mise à jour possible ici.");
+  });
   if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost") && !dansLApp()) {
-    let majPrete = false, telecharge = false;
+    let majPrete = false, telecharge = false, attenteTir = null;
+    demandeTir = finir => {
+      attenteTir = finir;
+      navigator.serviceWorker.ready.then(r => r.active ? r.active.postMessage("verifier") : finir("Pas encore installé."));
+      setTimeout(() => { if (attenteTir === finir) { attenteTir = null; finir("Pas de réponse : la version enregistrée reste utilisée."); } }, 20000);
+    };
     const verifier = () => navigator.serviceWorker.ready.then(r => { if (navigator.onLine && r.active) r.active.postMessage("verifier"); });
     navigator.serviceWorker.register("sw.js").then(verifier);
     // à chaque retour du réseau et à chaque retour sur l'app
@@ -481,6 +634,13 @@
     document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") verifier(); });
     navigator.serviceWorker.addEventListener("message", e => {
       const d = e.data || {};
+      // demande faite en tirant : on recharge tout de suite si une version est arrivée
+      if (attenteTir && d.type !== "progres") {
+        const f = attenteTir; attenteTir = null;
+        if (d.type === "etat" && (d.nouveau || majPrete)) { f("Nouvelle version : rechargement."); setTimeout(() => location.reload(), 600); return; }
+        if (d.type === "etat") { f("Déjà à jour."); return; }
+        f("Échec : la version enregistrée reste utilisée."); return;
+      }
       if (majPrete) return;   // la proposition de recharger reste affichée
       if (d.type === "progres") { telecharge = true; dire(`Téléchargement pour le hors ligne : ${d.fait} / ${d.total}`); }
       else if (d.type === "etat" && d.nouveau) {
@@ -497,4 +657,5 @@
   } else dire("");
 
   route();
+  passe();
 })();
