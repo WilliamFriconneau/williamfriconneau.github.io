@@ -985,7 +985,7 @@
   const faible = n => /faible|pédagog/i.test(n || "");
   // un mémo se lit en tableau : tableau donné, ou lignes « clé : valeur » (XABCDE, 4H-4T, grades…) en deux colonnes
   function corpsMemo(m) {
-    let t = m.pisu ? `<p class="memo-pisu"><b>Le PISU dit :</b> ${esc(m.pisu)}</p>` : "";
+    let t = "";
     if (m.tableau) t += `<table class="memo-t"><thead><tr>${m.tableau.entetes.map(x => `<th>${esc(x)}</th>`).join("")}</tr></thead><tbody>${m.tableau.lignes.map(r => `<tr>${r.map((x, i) => i ? `<td>${esc(x) || "—"}</td>` : `<th>${esc(x)}</th>`).join("")}</tr>`).join("")}</tbody></table>`;
     const kv = m.lignes.map(x => /^([^:]{1,22}?) : (.+)$/.exec(x));
     if (!m.tableau && kv.filter(Boolean).length >= Math.max(2, m.lignes.length * 0.6))

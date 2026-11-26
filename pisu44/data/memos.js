@@ -40,8 +40,7 @@ window.PISU_MEMOS = {
      "Relâchement complet du thorax",
      "Interruptions aussi courtes que possible",
      "Non choquable : adrénaline 1 mg dès que possible",
-     "Choquable : adrénaline 1 mg après le 3e choc",
-     "Puis adrénaline toutes les 3 à 5 min"
+     "Choquable : adrénaline 1 mg après le 3e choc"
     ],
     "sources": [
      {
@@ -58,8 +57,7 @@ window.PISU_MEMOS = {
       "date": "27/10/2025",
       "editeur": "Resuscitation Council UK"
      }
-    ],
-    "pisu": "Adrénaline toutes les 2 analyses (4 min), p.19-20."
+    ]
    }
   ],
   "1E": [
@@ -129,24 +127,6 @@ window.PISU_MEMOS = {
       "editeur": "SFMU, SRLF, GFRUP"
      }
     ]
-   },
-   {
-    "titre": "Oxygène dans l'asthme grave",
-    "lignes": [
-     "RFE : oxygène titré",
-     "Objectif SpO2 94 à 98 %",
-     "Adulte et enfant"
-    ],
-    "sources": [
-     {
-      "titre": "RFE SFMU-SRLF : prise en charge de l'exacerbation sévère d'asthme",
-      "url": "https://www.sfmu.org/upload/consensus/RFE_Exacerbation_Severe_d_asthme2018.pdf",
-      "niveau": "recommandation de société savante",
-      "date": "juin 2018",
-      "editeur": "SFMU, SRLF, GFRUP"
-     }
-    ],
-    "pisu": "O2 au masque haute concentration 15 l/min pour une saturation > 94 %, p.22."
    }
   ],
   "2E": [
@@ -169,24 +149,6 @@ window.PISU_MEMOS = {
       "editeur": "SFMU, SRLF, GFRUP"
      }
     ]
-   },
-   {
-    "titre": "Oxygène dans l'asthme grave",
-    "lignes": [
-     "RFE : oxygène titré",
-     "Objectif SpO2 94 à 98 %",
-     "Adulte et enfant"
-    ],
-    "sources": [
-     {
-      "titre": "RFE SFMU-SRLF : prise en charge de l'exacerbation sévère d'asthme",
-      "url": "https://www.sfmu.org/upload/consensus/RFE_Exacerbation_Severe_d_asthme2018.pdf",
-      "niveau": "recommandation de société savante",
-      "date": "juin 2018",
-      "editeur": "SFMU, SRLF, GFRUP"
-     }
-    ],
-    "pisu": "O2 au masque haute concentration 15 l/min pour une saturation > 94 %, 2E."
    }
   ],
   "3A": [
@@ -468,38 +430,12 @@ window.PISU_MEMOS = {
   ],
   "6A": [
    {
-    "titre": "Brûlé grave adulte (SFAR 2019)",
-    "lignes": [
-     "Un critère suffit :",
-     "SCB > 20 % ou profonde > 5 %",
-     "Inhalation de fumées",
-     "Profonde : visage, mains, pieds, périnée",
-     "Électrisation haut voltage",
-     "Si SCB < 20 %, grave si en plus :",
-     "Âge > 75 ans ou comorbidité sévère",
-     "Brûlure circulaire profonde, électrique, chimique"
-    ],
-    "sources": [
-     {
-      "titre": "Legrand et al. Management of severe thermal burns in the acute phase in adults and children",
-      "url": "https://doi.org/10.1016/j.accpm.2020.03.006",
-      "niveau": "recommandation de société savante",
-      "date": "validé mai 2019, publié 2020",
-      "editeur": "SFAR, SFB, SFMU, ADARPEF — ACCPM 39:253-267"
-     }
-    ],
-    "pisu": "Inclusion : brûlure du 2e ou 3e degré > 15 % de la surface corporelle, p.38."
-   },
-   {
     "titre": "Surface brûlée et refroidissement",
     "lignes": [
      "Compter seulement 2e et 3e degrés",
      "Paume + doigts du patient = 1 %",
      "Wallace surestime la surface",
-     "Lund-Browder : méthode la plus précise",
-     "SFAR : refroidir 20 min, dans les 3 h",
-     "Eau à 15 °C en général",
-     "Éviter si SCB > 20-25 % (SFAR)"
+     "Lund-Browder : méthode la plus précise"
     ],
     "sources": [
      {
@@ -509,42 +445,17 @@ window.PISU_MEMOS = {
       "date": "validé mai 2019, publié 2020",
       "editeur": "SFAR, SFB, SFMU, ADARPEF — ACCPM 39:253-267"
      }
-    ],
-    "pisu": "Eau ruisselante à 15°, 15 min, à 15 cm, sans condition de surface ; règle de Wallace, p.40."
+    ]
    }
   ],
   "6E": [
-   {
-    "titre": "Brûlé grave enfant (SFAR 2019)",
-    "lignes": [
-     "Un critère suffit :",
-     "SCB > 10 % ou profonde > 5 %",
-     "Nourrisson < 1 an",
-     "Comorbidité sévère",
-     "Inhalation de fumées",
-     "Profonde : visage, mains, pieds, périnée, plis",
-     "Brûlure circulaire",
-     "Électrique ou chimique"
-    ],
-    "sources": [
-     {
-      "titre": "Legrand et al. Management of severe thermal burns in the acute phase in adults and children",
-      "url": "https://doi.org/10.1016/j.accpm.2020.03.006",
-      "niveau": "recommandation de société savante",
-      "date": "validé mai 2019, publié 2020",
-      "editeur": "SFAR, SFB, SFMU, ADARPEF — ACCPM 39:253-267"
-     }
-    ],
-    "pisu": "Inclusion : > 6 ans > 15 % ; 1 à 6 ans > 10 % ; < 1 an > 5 %, p.76."
-   },
    {
     "titre": "Surface brûlée et refroidissement (enfant)",
     "lignes": [
      "Lund-Browder pédiatrique : méthode de référence",
      "Wallace non adaptée à l'enfant",
      "Paume + doigts de l'enfant = 1 %",
-     "Hypothermie : risque si SCB > 10 %",
-     "Éviter le refroidissement si SCB > 10-15 %"
+     "Hypothermie : risque si SCB > 10 %"
     ],
     "sources": [
      {
@@ -554,8 +465,7 @@ window.PISU_MEMOS = {
       "date": "validé mai 2019, publié 2020",
       "editeur": "SFAR, SFB, SFMU, ADARPEF — ACCPM 39:253-267"
      }
-    ],
-    "pisu": "Refroidir à l'eau à 15°, 15 min, à 15 cm, si pas encore fait, p.78."
+    ]
    }
   ],
   "7A": [
@@ -606,8 +516,7 @@ window.PISU_MEMOS = {
      "Modérée : Glasgow ≤ 13, confusion",
      "Modérée : stridor, voix rauque, polypnée, suie",
      "Grave : Glasgow ≤ 8, convulsions, coma",
-     "Grave : mydriase, collapsus, dépression respiratoire",
-     "SFAR : hydroxocobalamine dès la forme modérée"
+     "Grave : mydriase, collapsus, dépression respiratoire"
     ],
     "sources": [
      {
@@ -617,8 +526,7 @@ window.PISU_MEMOS = {
       "date": "validé mai 2019, publié 2020",
       "editeur": "SFAR, SFB, SFMU, ADARPEF — ACCPM 39:253-267"
      }
-    ],
-    "pisu": "Hydroxocobalamine si ACR, ou si PAS < valeur pour l'âge et/ou réaction uniquement à la douleur, p.82."
+    ]
    },
    {
     "titre": "Inhalation de fumées : y penser",
@@ -665,9 +573,6 @@ window.PISU_MEMOS = {
    {
     "titre": "Évaluer la douleur (enfant)",
     "lignes": [
-     "> 5 ans : autoévaluation (EVA, EN)",
-     "< 5 ans : hétéroévaluation",
-     "Visages FPS-R : dès 4-5 ans, 0 à 10",
      "EVENDOL : 0 à 7 ans, sur 15",
      "EVENDOL : traiter à partir de 4/15"
     ],
@@ -693,8 +598,7 @@ window.PISU_MEMOS = {
       "date": "2012",
       "editeur": "Pain"
      }
-    ],
-    "pisu": "EN ou échelle des visages dès 3 ans, seuil ≥ 4, p.84."
+    ]
    }
   ],
   "9A": [
@@ -724,8 +628,7 @@ window.PISU_MEMOS = {
      "15 g de sucre par la bouche",
      "Glucose ou saccharose plutôt que jus",
      "Recontrôler la glycémie à 15 min",
-     "Toujours basse : redonner 15 g",
-     "Source adulte"
+     "Toujours basse : redonner 15 g"
     ],
     "sources": [
      {
@@ -735,8 +638,7 @@ window.PISU_MEMOS = {
       "date": "2018",
       "editeur": "Diabetes Canada — Can J Diabetes"
      }
-    ],
-    "pisu": "Le PISU 9E resucre aussi l'enfant : 15 g de sucres rapides + sucres lents."
+    ]
    }
   ],
   "9E": [
@@ -759,26 +661,6 @@ window.PISU_MEMOS = {
       "editeur": "ISPAD — Pediatric Diabetes"
      }
     ]
-   },
-   {
-    "titre": "Resucrage de l'enfant (ISPAD)",
-    "lignes": [
-     "Environ 0,3 g/kg de glucose par la bouche",
-     "9 g à 30 kg, 15 g au-delà 50 kg",
-     "Recontrôler à 15 min",
-     "Pas de réponse : refaire le resucrage",
-     "Puis glucides pour éviter la récidive"
-    ],
-    "sources": [
-     {
-      "titre": "ISPAD Clinical Practice Consensus Guidelines 2022 : hypoglycémie de l'enfant et l'adolescent",
-      "url": "https://doi.org/10.1111/pedi.13443",
-      "niveau": "recommandation de société savante",
-      "date": "2022",
-      "editeur": "ISPAD — Pediatric Diabetes"
-     }
-    ],
-    "pisu": "15 g de sucres rapides + sucres lents, p.89-90."
    }
   ],
   "1AT": [
@@ -855,9 +737,6 @@ window.PISU_MEMOS = {
     "titre": "Purpura fulminans : conduite à tenir",
     "lignes": [
      "Appel systématique au SAMU-Centre 15",
-     "Traiter le choc : voie veineuse, remplissage",
-     "Antibiotique en urgence : ceftriaxone de préférence",
-     "Ne pas le retarder pour des prélèvements",
      "Transfert rapide vers une réanimation adaptée"
     ],
     "sources": [
@@ -875,8 +754,7 @@ window.PISU_MEMOS = {
       "date": "décembre 2013",
       "editeur": "ARS Pays de la Loire, groupe régional"
      }
-    ],
-    "pisu": "Ceftriaxone et remplissage à la demande du MRU, après le bilan au 15, p.95."
+    ]
    }
   ],
   "1SSO": [],
@@ -885,12 +763,10 @@ window.PISU_MEMOS = {
    {
     "titre": "Coup de chaleur d'exercice",
     "lignes": [
-     "Température centrale > 40,5 °C",
-     "Plus signes neurologiques centraux",
+     "Signes neurologiques centraux",
      "Comportement anormal, conscience altérée, perte de connaissance",
      "Urgence vitale",
      "Refroidir d'abord, transporter ensuite",
-     "Immersion corps entier en eau froide",
      "Température rectale pour le diagnostic"
     ],
     "sources": [
@@ -901,8 +777,7 @@ window.PISU_MEMOS = {
       "date": "2023",
       "editeur": "Comité international olympique — BJSM"
      }
-    ],
-    "pisu": "Seuil ≥ 40 °C ; refroidir les axes vasculaires ; VVP NaCl 0,9 %, logigramme 3SSO."
+    ]
    }
   ],
   "4SSO": [
@@ -911,8 +786,6 @@ window.PISU_MEMOS = {
     "lignes": [
      "Décrocher le plus tôt possible",
      "Physiopathologie et conduite encore discutées",
-     "Pas de preuve d'un danger de l'allongement",
-     "Revues : mettre à plat, puis ABC",
      "Données faibles : le PISU 4SSO prime"
     ],
     "sources": [
@@ -930,8 +803,7 @@ window.PISU_MEMOS = {
       "date": "2021",
       "editeur": "World Journal of Emergency Medicine"
      }
-    ],
-    "pisu": "Évacuation en position fœtale ou repositionnement progressif (10°/10°), p.104."
+    ]
    }
   ],
   "5SSO": [
@@ -1070,65 +942,7 @@ window.PISU_MEMOS = {
       "Aucune"
      ]
     ]
-   },
-   "pisu": "Le carnet (p.15) garde l'ancienne formulation (« à la douleur ») ; la cotation est la même."
-  },
-  {
-   "id": "constantes-enfant",
-   "titre": "Constantes de l'enfant (ERC 2021)",
-   "lignes": [
-    "Critères PISU : tableau du carnet SDIS"
-   ],
-   "sources": [
-    {
-     "titre": "ERC Guidelines 2021 : réanimation pédiatrique (traduction officielle allemande)",
-     "url": "https://europepmc.org/article/PMC/PMC8170638",
-     "niveau": "recommandation de société savante",
-     "date": "2021",
-     "editeur": "European Resuscitation Council / Notfall + Rettungsmedizin"
-    }
-   ],
-   "tableau": {
-    "entetes": [
-     "Âge",
-     "FR /min",
-     "FC /min",
-     "PAS p5 mmHg"
-    ],
-    "lignes": [
-     [
-      "1 mois",
-      "25-60",
-      "110-180",
-      "50"
-     ],
-     [
-      "1 an",
-      "20-50",
-      "100-170",
-      "70"
-     ],
-     [
-      "2 ans",
-      "18-40",
-      "90-160",
-      ""
-     ],
-     [
-      "5 ans",
-      "17-30",
-      "70-140",
-      "75"
-     ],
-     [
-      "10 ans",
-      "14-25",
-      "60-120",
-      "80"
-     ]
-    ]
-   },
-   "pisu": "Le carnet (annexe p.16) donne d'autres fourchettes ; ce sont elles qui servent aux critères des PISU."
+   }
   },
   {
    "id": "opqrst",
