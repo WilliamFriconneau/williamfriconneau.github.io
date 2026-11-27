@@ -70,13 +70,13 @@
     const enf = /E$/.test(code);
     return vs.find(v => enf === /enfant/i.test(v.nom) && !(enf && /adulte/i.test(v.nom))) || vs[0];
   }
-  const videoHtml = v => `<figure class="prep"><img src="${v.f}" alt="Préparation animée : ${esc(v.nom)}" loading="lazy" decoding="async"><figcaption>${esc(v.nom)} · <span class="prep-z">toucher pour agrandir</span></figcaption></figure>`;
+  const videoHtml = v => `<figure class="prep"><img src="${v.f}" alt="Animation : ${esc(v.nom)}" loading="lazy" decoding="async"><figcaption>${esc(v.nom)} · <span class="prep-z">toucher pour agrandir</span></figcaption></figure>`;
   // préparation en grand : plein écran, repart du début, on peut zoomer avec deux doigts ; un toucher ferme
   document.addEventListener("click", e => {
     const im = e.target.closest?.(".prep img, .t-page img"); if (!im) return;
     e.preventDefault(); e.stopPropagation();
     const z = document.createElement("div"); z.className = "prep-grand"; z.setAttribute("role", "dialog"); z.setAttribute("aria-label", im.alt);
-    z.innerHTML = `<img src="${im.getAttribute("src")}" alt="${esc(im.alt)}"><p>${esc(im.alt.replace(/^Préparation animée : /, "").slice(0, 80))} · toucher pour fermer</p>`;
+    z.innerHTML = `<img src="${im.getAttribute("src")}" alt="${esc(im.alt)}"><p>${esc(im.alt.replace(/^Animation : /, "").slice(0, 80))} · toucher pour fermer</p>`;
     const fermer = () => { z.remove(); document.removeEventListener("keydown", esc_); };
     const esc_ = ev => { if (ev.key === "Escape") fermer(); };
     z.addEventListener("click", fermer); document.addEventListener("keydown", esc_);
@@ -760,6 +760,8 @@
     const src = f.document ? `<p class="t-src">Source : « ${esc(f.document)} »${f.ref ? `, ${esc(f.ref)}` : ""}${f.date ? `, ${esc(f.date)}` : ""}. ${esc(f.origine)}${f.en_ligne ? `, mis en ligne le ${f.en_ligne.split("-").reverse().join("/")}` : ""}.</p>` : "";
     app.appendChild(h("div", { class: "p-tete" }, `<div class="pt-tx"><h1>${esc(f.titre)}</h1>${src}</div>`));
     const z = h("div", { class: "contenu tech-c" });
+    // animation du carnet, dessinée d'après les photos du matériel du SDIS (fiche et check-lists VLI)
+    if (VID["tech:" + id]) z.appendChild(h("section", { class: "bloc t-anim" }, `<h2>En animation</h2>${VID["tech:" + id].map(videoHtml).join("")}<p class="petit">Dessin d'après les photos du document du SDIS et des check-lists VLI. Le document ci-dessous fait foi.</p>`));
     if (f.videos.length) z.appendChild(h("section", { class: "bloc t-videos" }, `<h2>En vidéo <small>(réseau nécessaire)</small></h2>${f.videos.map(v => `<a class="ligne" href="${esc(v.url)}" target="_blank" rel="noopener"><span class="t-vid">▶</span><span>${esc(v.titre)}<small>${esc(v.par)}</small></span></a>`).join("")}`));
     if (f.resume && f.resume.length) z.appendChild(h("section", { class: "bloc t-resume" }, `<h2>L'essentiel</h2><p class="petit">Extraits du document, recopiés tels quels. La fiche complète suit.</p>${f.resume.map(r => `<h3>${esc(r.titre)}</h3><ul>${r.points.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`).join("")}`));
     if (f.pages) z.appendChild(h("div", { class: "t-pages" }, f.pages.map((p, i) => `<figure class="t-page"><img src="techniques/${p}" alt="${esc(f.titre)}, page ${i + 1} : ${esc((f.texte[i] || "").slice(0, 300))}" loading="${i < 2 ? "eager" : "lazy"}" decoding="async"><figcaption>Page ${i + 1} / ${f.pages.length} · toucher pour agrandir</figcaption></figure>`).join("")));

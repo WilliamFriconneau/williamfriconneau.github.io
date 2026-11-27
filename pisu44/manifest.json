@@ -1,5 +1,5 @@
 {
- "version": "204f7f8daa17c252",
+ "version": "f7fff8b23e97b8a8",
  "files": [
   {
    "path": "app.webmanifest",
@@ -53,8 +53,8 @@
   },
   {
    "path": "data/versions.js",
-   "sha256": "9e83f78698fd2b43192dfcf537c7aafc04f08668d5ee46192e5b227b982ce828",
-   "size": 3140
+   "sha256": "1b2a8b563ba020812b2b99a71e9dd0eaae612641584b75a267ec052fa19cd16f",
+   "size": 4761
   },
   {
    "path": "icones/icone-180.png",
@@ -238,8 +238,23 @@
   },
   {
    "path": "poche.js",
-   "sha256": "879a535197798e4a6264712c13bafd49312cd0c99566da375629fc64fadfecf8",
-   "size": 134509
+   "sha256": "74ec1fb2b401010cb1880371aec25a905c2accedc4eb0a69b9ff03de8dec9e65",
+   "size": 134868
+  },
+  {
+   "path": "preparations/G-ceinture.gif",
+   "sha256": "c391dea8e538a968393c5bcd33ead0562832c6d0efe691b34872d99d793ecaf6",
+   "size": 215771
+  },
+  {
+   "path": "preparations/G-io.gif",
+   "sha256": "0db9c090edb4a60b6c9124bb347575138635997cd9488daf717e5c9c3f7efe00",
+   "size": 790254
+  },
+  {
+   "path": "preparations/G-meopa.gif",
+   "sha256": "990245e74f83f838e789ac3312d4ce3209ee63171c5bd02008cf02fbc9798caa",
+   "size": 445489
   },
   {
    "path": "preparations/M1-1.gif",
@@ -268,8 +283,8 @@
   },
   {
    "path": "preparations/M13-1.gif",
-   "sha256": "2e75f0bc60c3263d501ec6d7f2b9c57559b8ee014647118c2a58edb4e9137bd8",
-   "size": 199541
+   "sha256": "daec9637ce3eed83edfc0f17e03f2fee97cc39990dad045f91ee2f8f0edf8533",
+   "size": 204242
   },
   {
    "path": "preparations/M14-1.gif",
@@ -368,13 +383,13 @@
   },
   {
    "path": "preparations/M7-1.gif",
-   "sha256": "e9e6691f2ac122262b933d038ff6fc243dbfb7b89a1d98febbb0227e70284157",
-   "size": 827920
+   "sha256": "de8b2cad141a7f587e168975c793a564efcdf48699e46de227a7764988cc010e",
+   "size": 851664
   },
   {
    "path": "preparations/M7-2.gif",
-   "sha256": "01a28ea88620a95efb30124a270f650bcb1b1ca22c4904c92c470adb49819ee0",
-   "size": 1494645
+   "sha256": "28e6ccc5b8a6c8a62964237701530f0f355f7e4ee0572311b65b8728868c6a72",
+   "size": 1512828
   },
   {
    "path": "preparations/M8-1.gif",
@@ -388,8 +403,8 @@
   },
   {
    "path": "preparations/index.js",
-   "sha256": "7da088e7f76ad4bd95c02dc31c231f16383ed42015d4b752813cc0d60a4eec30",
-   "size": 2474
+   "sha256": "5532d500db19b12d02de19f2d0462fcefccf0a2691a48d8253f00fa0b835f3c2",
+   "size": 2867
   },
   {
    "path": "style.css",
@@ -888,8 +903,8 @@
   },
   {
    "path": "techniques/index.js",
-   "sha256": "595696a257e2bf2b603c06c738d6a794ebb4cc870ea84ce5c56743df89914800",
-   "size": 362123
+   "sha256": "a4416f0763c674ebf019f36f35ad17d3746d39f73fe6f86439e9ac9275847ed6",
+   "size": 362135
   },
   {
    "path": "techniques/ivresse-1.jpg",

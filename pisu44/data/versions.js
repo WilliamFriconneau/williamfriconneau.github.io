@@ -1,6 +1,24 @@
 window.PISU_VERSIONS = {
  "versions": [
   {
+   "date": "2026-11-27",
+   "titre": "Animations redessinées d'après le vrai matériel du SDIS",
+   "nouveau": [
+    "Fiches techniques DIO, MÉOPA et ceinture pelvienne : animation en tête de fiche.",
+    "Matériel redessiné d'après les photos des fiches techniques et des check-lists VLI : driver EZ-IO bordeaux et aiguilles de couleur, EZ-Stabilizer, EZ-Connect, bloc NeedleVISE ; bouteille Kalinox « Présence » avec volant bleu, sélecteur gris et fenêtre du manomètre ; ceinture pelvienne à poulie et languette ; pochette jaune du kit stupéfiants."
+   ],
+   "corrige": [
+    "MÉOPA : l'animation montrait une valve à la demande, absente des VLI. Elle suit maintenant le système avec ballon de la sacoche consommables MÉOPA (sortie olive, tuyau d'évacuation, débit réglé au sélecteur gris), comme le guide Kalinox. Changer de bouteille sous 10 bar.",
+    "Voie intra-osseuse : étapes de la fiche du SDIS (tête humérale en 1re intention chez l'adulte, repères en largeurs de doigt, stylet dans le NeedleVISE, flush 10 ml adulte et 5 ml enfant, poche à pression).",
+    "Ceinture pelvienne : étapes de la fiche du SDIS (coupe en laissant 15 à 20 cm, poulie de chaque côté, languette, doigt sous la ceinture) à la place de la notice d'un autre modèle.",
+    "Fiches techniques tirées de documents Word : le signe ≥ manquait (« enfant ≥ 8 ans » dans la fiche DIO)."
+   ],
+   "a_corriger": [
+    "MÉOPA : le RCP du Kalinox recommande une valve à la demande avec un masque facial ; les VLI n'ont que le système avec ballon. À voir avec le SSSM."
+   ],
+   "a_tester": []
+  },
+  {
    "date": "2026-11-26",
    "titre": "Scores, SSO, mémo traumato, relecture complète contre le PISU 2024",
    "nouveau": [
